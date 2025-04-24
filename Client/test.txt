@@ -1,0 +1,10 @@
+Requirements
+- login existing hosts, 
+- direct to the dashboard when authenicated
+- sign up new hosts, add those new to databsase
+
+- allow host to accept/reject reservation requests
+- see confirmed reservations in a clean format. (calender?)
+- email format correctly.
+- all fields required
+- 
