@@ -1,0 +1,4 @@
+kivy==2.1.0
+pymongo==4.3.3
+werkzeug==2.2.2
+certifi==2022.12.7

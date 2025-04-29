@@ -1,8 +1,7 @@
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.lang import Builder
-from kivy.properties import ObjectProperty
-from db_layer import register_guest, login_guest, logout_guest
+from db_layer import db_layer  # Import the db_layer instance
 
 Builder.load_file('ui.kv')
 
@@ -34,12 +33,7 @@ class BnbApp(App):
         first_name = screen.ids.first_name.text
         last_name = screen.ids.last_name.text
         
-        # Basic validation
-        if not all([email, password, first_name, last_name]):
-            screen.ids.error_label.text = "All fields are required"
-            return
-        
-        result = register_guest(email, password, first_name, last_name)
+        result = db_layer.register_guest(email, password, first_name, last_name)
         if result.get('success'):
             screen.ids.error_label.text = ""
             screen.manager.current = 'search'
@@ -51,11 +45,7 @@ class BnbApp(App):
         email = screen.ids.email.text
         password = screen.ids.password.text
         
-        if not all([email, password]):
-            screen.ids.error_label.text = "Email and password are required"
-            return
-        
-        result = login_guest(email, password)
+        result = db_layer.login_guest(email, password)
         if result.get('success'):
             screen.ids.error_label.text = ""
             self.root.current = 'search'
@@ -63,7 +53,7 @@ class BnbApp(App):
             screen.ids.error_label.text = result.get('message')
     
     def logout_guest(self):
-        result = logout_guest()
+        result = db_layer.logout_guest()
         if result.get('success'):
             # Clear any sensitive data
             self.root.current = 'welcome'
