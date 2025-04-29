@@ -1,0 +1,117 @@
+# ui.kv
+<WelcomeScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 50
+        spacing: 20
+        
+        Label:
+            text: 'Welcome'
+            font_size: 32
+            bold: True
+        
+        Button:
+            text: 'Login'
+            size_hint_y: None
+            height: 50
+            on_press: root.manager.current = 'login'
+            
+        Button:
+            text: 'Register'
+            size_hint_y: None
+            height: 50
+            on_press: root.manager.current = 'register'
+
+<RegisterScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 50
+        spacing: 20
+        
+        Label:
+            text: 'Guest Registration'
+            font_size: 24
+        
+        TextInput:
+            hint_text: 'Email'
+            id: email
+            multiline: False
+        
+        TextInput:
+            hint_text: 'Password'
+            id: password
+            password: True
+            multiline: False
+        
+        TextInput:
+            hint_text: 'First Name'
+            id: first_name
+            multiline: False
+        
+        TextInput:
+            hint_text: 'Last Name'
+            id: last_name
+            multiline: False
+        
+        BoxLayout:
+            spacing: 10
+            Button:
+                text: 'Submit'
+                on_press: app.register_guest()
+            Button:
+                text: 'Cancel'
+                on_press: root.manager.current = 'welcome'
+
+<LoginScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 50
+        spacing: 20
+        
+        Label:
+            text: 'Please Sign In'
+            font_size: 24
+        
+        TextInput:
+            hint_text: 'Email'
+            id: email
+            multiline: False
+        
+        TextInput:
+            hint_text: 'Password'
+            id: password
+            password: True
+            multiline: False
+        
+        BoxLayout:
+            spacing: 10
+            Button:
+                text: 'Login'
+                on_press: app.login_guest()
+            Button:
+                text: 'Back'
+                on_press: root.manager.current = 'welcome'
+
+
+<SearchScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 20
+        
+        Label:
+            text: 'Search Listings'
+            font_size: 24
+        
+        TextInput:
+            hint_text: 'City'
+            id: city
+        
+        TextInput:
+            hint_text: 'Max Price'
+            id: max_price
+            input_filter: 'int'
+        
+        Button:
+            text: 'Search'
+            size_hint_y: None
+            height: 50

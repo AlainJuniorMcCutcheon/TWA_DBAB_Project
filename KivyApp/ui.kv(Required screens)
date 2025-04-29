@@ -1,0 +1,38 @@
+# Main application screens
+<MainScreen>:
+    # Welcome screen for guests
+    WelcomeScreen:
+    RegisterScreen:
+    LoginScreen:
+    SearchScreen:
+    ResultsScreen:
+    ReservationScreen:
+    ConfirmationScreen:
+
+# Popups
+<RegisterPopup>:
+    # Popup for guest registration
+    title: "Guest Registration"
+    size_hint: 0.8, 0.8
+    
+<LoginPopup>:
+    # Popup for guest login
+    title: "Guest Login"
+    size_hint: 0.7, 0.6
+
+# RecyclerView items
+<ListingItem@MDCard>:
+    # Item template for search results
+    orientation: "vertical"
+    size_hint_y: None
+    height: "120dp"
+    padding: "10dp"
+    spacing: "10dp"
+
+<ReservationItem@MDCard>:
+    # Item template for reservation list
+    orientation: "vertical"
+    size_hint_y: None
+    height: "200dp"
+    padding: "10dp"
+    spacing: "10dp"
