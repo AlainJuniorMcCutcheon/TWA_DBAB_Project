@@ -20,23 +20,23 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRouter);
-app.use('/api/host', hostRouter);
-app.use('/api/guest', guestRouter);
-app.use('/api/listings', listingRouter);
+app.use('/auth', authRouter);
+app.use('/host', hostRouter);
+app.use('/guest', guestRouter);
+app.use('/listings', listingRouter);
 
 // Connect to MongoDB
 const client = new MongoClient(mongoUri);
 
 client.connect()
   .then(() => {
-    console.log("Connected to MongoDB Atlas.");
+    console.log("Connected to MongoDB.");
     // Start the server only after the connection is established
     app.listen(5000, () => {
       console.log("Server running on port 5000");
     });
   })
   .catch((err) => {
-    console.error("Error connecting to MongoDB Atlas:", err);
+    console.error("Error connecting to MongoDB:", err);
   });
 

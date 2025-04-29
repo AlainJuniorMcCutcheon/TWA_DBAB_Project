@@ -1,35 +1,75 @@
 import express from 'express';
-import { createReservation, getReservationsByGuest, getReservationsByListing, updateReservationStatus } from './models/Reservation.js';
+import { MongoClient, ObjectId } from 'mongodb';
+import dotenv from 'dotenv';
+import { authenticateToken } from './authMiddleware.js';
 
-const router = express.Router();
+dotenv.config();
 
-// Route to create a reservation
-router.post('/reservation', async (req, res) => {
-  const { guestId, listingId, startDate, endDate } = req.body;
-  const result = await createReservation(guestId, listingId, new Date(startDate), new Date(endDate));
-  res.json(result);
-});
+const reservationRouter = express.Router();
+const uri = process.env.MONGO_URI;
+const client = new MongoClient(uri);
+const dbName = 'AirBnB';
+let reservationCollection;
 
-// Route to get all reservations for a guest
-router.get('/reservations/guest/:guestId', async (req, res) => {
-  const guestId = req.params.guestId;
-  const reservations = await getReservationsByGuest(guestId);
-  res.json(reservations);
-});
+client.connect()
+  .then(() => {
+    const db = client.db(dbName);
+    reservationCollection = db.collection("Reservation"); // Corrected collection name
+    console.log('Connected to MongoDB: Reservations ready');
+  })
+  .catch((err) => {
+    console.error('Error connecting to MongoDB:', err.message);
+  });
 
-// Route to get all reservations for a listing
-router.get('/reservations/listing/:listingId', async (req, res) => {
+// Get reservations by listing ID
+reservationRouter.get('/listing/:listingId', authenticateToken, async (req, res) => {
   const listingId = req.params.listingId;
-  const reservations = await getReservationsByListing(listingId);
-  res.json(reservations);
+
+  try {
+    const reservations = await reservationCollection.find({ listingId: listingId }).toArray();
+    res.json(reservations);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching reservations', error: err.message });
+  }
 });
 
-// Route to update reservation status
-router.put('/reservation/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  const result = await updateReservationStatus(id, status);
-  res.json(result);
+// Create a new reservation
+reservationRouter.post('/', authenticateToken, async (req, res) => {
+  const { listingId, guestName, checkIn, checkOut } = req.body;
+
+  if (!listingId || !guestName || !checkIn || !checkOut) {
+    return res.status(400).json({ message: 'Listing ID, guest name, check-in and check-out dates are required' });
+  }
+
+  const newReservation = {
+    listingId,
+    guestName,
+    checkIn,
+    checkOut,
+    createdAt: new Date(),
+  };
+
+  try {
+    const result = await reservationCollection.insertOne(newReservation); // Insert new reservation into Reservation collection
+    res.status(201).json({ message: 'Reservation created', id: result.insertedId });
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating reservation', error: err.message });
+  }
 });
 
-export default router;
+// DELETE a reservation by ID
+reservationRouter.delete('/:id', authenticateToken, async (req, res) => {
+  const reservationId = req.params.id;
+
+  try {
+    const reservation = await reservationCollection.findOne({ _id: new ObjectId(reservationId) });
+    if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
+
+    await reservationCollection.deleteOne({ _id: new ObjectId(reservationId) });
+    res.json({ message: 'Reservation deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting reservation', error: err.message });
+  }
+});
+
+export default reservationRouter;
