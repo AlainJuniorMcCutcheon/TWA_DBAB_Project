@@ -1,164 +1,140 @@
-# db_layer.py - Registration Functions
-def register_guest(guest_data: dict) -> tuple:
-    """
-    Register a new guest user
-    Args:
-        guest_data: {
-            "email": str,
-            "password": str,
-            "first_name": str,
-            "last_name": str,
-            "phone": str
-        }
-    Returns:
-        (success: bool, message: str)
-    """
-    pass
+===========================
+ui.kv Required Screens
+===========================
 
-def register_host(host_data: dict) -> tuple:
-    """
-    Register a new host user
-    Args:
-        host_data: {
-            "email": str,
-            "password": str,
-            "first_name": str,
-            "last_name": str,
-            "host_id": str
-        }
-    Returns:
-        (success: bool, message: str)
-    """
-    pass
+Main Screens:
 
-# Authentication Functions
-def authenticate_guest(email: str, password: str) -> tuple:
-    """
-    Authenticate guest user
-    Returns:
-        (success: bool, user_data: dict/None)
-    """
-    pass
+1. WelcomeScreen
+   - Login button
+   - Register button
+   - Error message display
 
-def authenticate_host(email: str, password: str) -> tuple:
-    """
-    Authenticate host user
-    Returns:
-        (success: bool, user_data: dict/None)
-    """
-    pass
+2. RegisterScreen
+   - Email input
+   - Password input
+   - First name input
+   - Last name input
+   - Submit button
+   - Cancel button
+   - Error message display
 
-# Search Functions
-def search_listings(
-    location: str = None,
-    price_min: float = None,
-    price_max: float = None,
-    bedrooms: int = None,
-    amenities: list = None,
-    date_range: tuple = None
-) -> list:
-    """
-    Search available listings with filters
-    Returns list of matching listings
-    """
-    pass
+3. LoginScreen
+   - Email input
+   - Password input
+   - Login button
+   - Back button
+   - Error message display
 
-def get_listing_details(listing_id: str) -> dict:
-    """
-    Get full details for a specific listing
-    """
-    pass
+4. SearchScreen + Search results
+   - City search input
+   - Max price input
+   - Search button
+   - Error message display
+   - Scrollable list of search results
+   - Listing name label
+   - Price label
+   - Check availability button
+   - (RecyclerView for listing items)
+   Not required but could be useful:
+   - Sign out button
 
-def check_listing_availability(listing_id: str, start_date: str, end_date: str) -> bool:
-    """
-    Check if listing is available for given dates
-    Returns True if available
-    """
-    pass
+5. ReservationsScreen EDIT
+   - Listing name label
+   - Error message display
+   - Check-in date input
+   - Check-out date input
+   - Confirm reservation button
+   - Back button
+   Not required but could be useful:
+   - Listing name
+   - Price display
+   - Location
+   - Description
+   - Amenities list
 
-# Reservation Functions
-def create_reservation(reservation_data: dict) -> tuple:
-    """
-    Create a new reservation
-    Args:
-        reservation_data: {
-            "guest_id": str,
-            "listing_id": str,
-            "start_date": str,
-            "end_date": str,
-            "guests": int,
-            "total_price": float
-        }
-    Returns:
-        (success: bool, reservation_id: str/None)
-    """
-    pass
+6. ConfirmationScreen EDIT
+   - Guest name reservation's label
+   - Error message display
+   - Listing name label
+   - City label
+   - Total price label
+   - Status label
+   - Cancel buttons
+   - (RecyclerView for reservation items)
+   - Logout button
+   Not required but could be useful:
+   - Refresh button
+   - Back to search button
 
-def get_guest_reservations(guest_id: str, status_filter: str = None) -> list:
-    """
-    Get all reservations for a guest
-    Optional status filter: "pending", "confirmed", "completed", "cancelled"
-    """
-    pass
+Popups:
 
-def get_host_reservations(host_id: str, status_filter: str = None) -> list:
-    """
-    Get all reservations for a host's properties
-    Optional status filter
-    """
-    pass
+1. ReservationPopup
+   - Listing name
+   - Price display
+   - Check-in date input
+   - Check-out date input
+   - Number of guests input
+   - Total price calculation
+   - Confirm button
+   - Cancel button
 
-def update_reservation_status(reservation_id: str, new_status: str) -> bool:
-    """
-    Update reservation status
-    Valid statuses: "pending", "confirmed", "completed", "cancelled"
-    Returns success status
-    """
-    pass
+2. ReservationDetailPopup
+   - Reservation details
+   - Cancel reservation button (if allowed)
+   - Close button
 
-def cancel_reservation(reservation_id: str, guest_id: str) -> bool:
-    """
-    Cancel a reservation (guest-initiated)
-    Returns success status
-    """
-    pass
+===========================
+db_layer.py Required Functions
+===========================
 
+Registration:
 
-# ui.kv - Required screens
-<MainScreen>:
-    # Welcome screen for guests
-    WelcomeScreen:
-    RegisterScreen:
-    LoginScreen:
-    SearchScreen:
-    ResultsScreen:
-    ReservationScreen:
-    ConfirmationScreen:
+- register_guest(email, password, first_name, last_name)
+  - Validate all fields present
+  - Validate email format
+  - Validate password complexity (8+ chars, number, uppercase)
+  - Check email uniqueness
+  - Hash password with bcrypt
+  - Create user document with role="guest"
 
-# Popups
-<RegisterPopup>:
-    # Popup for guest registration
-    title: "Guest Registration"
-    size_hint: 0.8, 0.8
-    
-<LoginPopup>:
-    # Popup for guest login
-    title: "Guest Login"
-    size_hint: 0.7, 0.6
+Authentication:
 
-# RecyclerView items
-<ListingItem@MDCard>:
-    # Item template for search results
-    orientation: "vertical"
-    size_hint_y: None
-    height: "120dp"
-    padding: "10dp"
-    spacing: "10dp"
+- login_guest(email, password)
+  - Find user by email and role
+  - Verify password with bcrypt
+  - Return user data if successful
 
-<ReservationItem@MDCard>:
-    # Item template for reservation list
-    orientation: "vertical"
-    size_hint_y: None
-    height: "200dp"
-    padding: "10dp"
-    spacing: "10dp"
+- logout_guest()
+  - (Primarily client-side session management)
+
+Searches:
+
+- search_listings(city=None, max_price=None)
+  - Build query based on filters
+  - Check availability against existing reservations
+  - Return limited results (50) with essential fields
+
+- get_listing_details(listing_id)
+  - Retrieve full listing details
+
+Reservations:
+
+- make_reservation(user_id, listing_id, check_in, check_out, guests)
+  - Validate dates
+  - Calculate total price
+  - Create reservation record
+  - Update user's reservations list
+  - Update listing's reservations list
+
+- get_user_reservations(user_id)
+  - Retrieve all reservations for user
+  - Include listing details for each
+
+- cancel_reservation(user_id, reservation_id)
+  - Verify user owns reservation
+  - Check if cancellation is allowed (pending/confirmed status)
+  - Update status to "cancelled"
+
+- check_listing_availability(listing_id, check_in, check_out)
+  - Verify no conflicting reservations
+  - Return True/False for availability

@@ -1,7 +1,7 @@
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.lang import Builder
-from db_layer import db_layer  # Import the db_layer instance
+from db_layer import db_layer
 
 Builder.load_file('ui.kv')
 
@@ -18,6 +18,10 @@ class SearchScreen(Screen):
     pass
 
 class BnbApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.current_user = None  # Track logged in user
+        
     def build(self):
         self.sm = ScreenManager()
         self.sm.add_widget(WelcomeScreen(name='welcome'))
@@ -47,6 +51,12 @@ class BnbApp(App):
         
         result = db_layer.login_guest(email, password)
         if result.get('success'):
+            self.current_user = {  # Store user data
+                'user_id': result['user_id'],
+                'email': email,
+                'first_name': result['first_name'],
+                'role': result['role']
+            }
             screen.ids.error_label.text = ""
             self.root.current = 'search'
         else:
@@ -55,6 +65,7 @@ class BnbApp(App):
     def logout_guest(self):
         result = db_layer.logout_guest()
         if result.get('success'):
+            self.current_user = None  # Clear current user
             # Clear any sensitive data
             self.root.current = 'welcome'
             # Clear login fields

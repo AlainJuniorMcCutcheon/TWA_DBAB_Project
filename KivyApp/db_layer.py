@@ -1,20 +1,36 @@
+import os
+from dotenv import load_dotenv
+import bcrypt  # Add this import
+
 try:
     from pymongo import MongoClient
-    from werkzeug.security import generate_password_hash, check_password_hash
     import certifi
 except ImportError as e:
     print(f"Import error: {e}. Please install the required packages.")
     raise
 
+# Load environment variables from .env file
+load_dotenv()
+
 class DatabaseLayer:
     def __init__(self):
         try:
-            # Replace with your actual MongoDB credentials
+            # Get MongoDB URI from environment variables
+            mongo_uri = os.getenv("MONGO_URI")
+            
+            if not mongo_uri:
+                raise ValueError("MONGO_URI environment variable not set")
+            
             self.client = MongoClient(
-                "mongodb+srv://<username>:<password>@freeworld.5dellif.mongodb.net/?retryWrites=true&w=majority&appName=FreeWorld",
+                mongo_uri,
                 tlsCAFile=certifi.where()
             )
-            self.db = self.client.bnb_app
+            self.db = self.client["AirBnB"]  # Using "AirBnB" database
+            
+            # Test the connection
+            self.db.command('ping')
+            print("Successfully connected to MongoDB!")
+            
         except Exception as e:
             print(f"Database connection error: {e}")
             raise
@@ -26,20 +42,32 @@ class DatabaseLayer:
             if not all([email, password, first_name, last_name]):
                 return {'success': False, 'message': 'All fields are required'}
             
-            # Check if email already exists
-            if self.db.guests.find_one({'email': email}):
+            # Password length validation
+            #if len(password) < 8:
+            #    return {'success': False, 'message': 'Password must be at least 8 characters'}
+            
+            # Basic email validation
+            if '@' not in email or '.' not in email:
+                return {'success': False, 'message': 'Invalid email format'}
+            
+            # Check if email already exists in Users collection
+            if self.db.Users.find_one({'email': email}):
                 return {'success': False, 'message': 'Email already registered'}
             
-            # Create new guest
-            guest = {
+            # Hash password with bcrypt
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            
+            # Create new user with guest role
+            user = {
                 'email': email,
-                'password': generate_password_hash(password),
+                'password': hashed_password.decode('utf-8'),  # Store as string
                 'first_name': first_name,
                 'last_name': last_name,
+                'role': 'guest',
                 'reservations': []
             }
             
-            self.db.guests.insert_one(guest)
+            self.db.Users.insert_one(user)
             return {'success': True, 'message': 'Registration successful'}
         
         except Exception as e:
@@ -48,19 +76,25 @@ class DatabaseLayer:
     def login_guest(self, email, password):
         """Authenticate a guest user"""
         try:
-            guest = self.db.guests.find_one({'email': email})
+            # Find user in Users collection
+            user = self.db.Users.find_one({
+                'email': email,
+                'role': 'guest'
+            })
             
-            if not guest:
-                return {'success': False, 'message': 'Invalid email or password'}
+            if not user:
+                return {'success': False, 'message': 'No account found with this email'}
             
-            if not check_password_hash(guest['password'], password):
-                return {'success': False, 'message': 'Invalid email or password'}
+            # Verify password with bcrypt
+            if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+                return {'success': False, 'message': 'Incorrect password'}
             
             return {
                 'success': True, 
                 'message': 'Login successful', 
-                'guest_id': str(guest['_id']),
-                'first_name': guest['first_name']
+                'user_id': str(user['_id']),
+                'first_name': user['first_name'],
+                'role': user['role']
             }
         
         except Exception as e:
