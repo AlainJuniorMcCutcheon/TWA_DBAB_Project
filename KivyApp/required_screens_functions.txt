@@ -1,0 +1,131 @@
+===========================
+ui.kv Required Screens
+===========================
+
+Main Screens:
+
+1. WelcomeScreen
+   - Login button
+   - Register button
+   - Error message display
+
+2. RegisterScreen
+   - Email input
+   - Password input
+   - First name input
+   - Last name input
+   - Submit button
+   - Cancel button
+   - Error message display
+
+3. LoginScreen
+   - Email input
+   - Password input
+   - Login button
+   - Back button
+   - Error message display
+
+4. SearchScreen + Search results
+   - City search input
+   - Max price input
+   - Search button
+   - Error message display
+   - Scrollable list of search results
+   - (RecyclerView for listing items)
+   Not required but could be useful:
+   - Sign out button
+
+5. ReservationsScreen
+   - Listing name label
+   - Error message display
+   - Check-in date input
+   - Check-out date input
+   - Confirm reservation button
+   - Back button
+   Not required but could be useful:
+   - Listing name
+   - Price display
+   - Location
+   - Description
+   - Amenities list
+
+6. ConfirmationScreen
+   - Guest name reservation's label
+   - Error message display
+   - Listing name label
+   - City label
+   - Total price label
+   - Status label
+   - Cancel buttons
+   - (RecyclerView for reservation items)
+   - Logout button
+   Not required but could be useful:
+   - Refresh button
+   - Back to search button
+
+Popups:
+
+1. ReservationPopup
+   - Listing name label
+   - Price label
+   - Check availability button
+
+2. ReservationDetailPopup
+   - Reservation details
+   - Cancel reservation button
+
+===========================
+db_layer.py Required Functions
+===========================
+
+Registration:
+
+- register_guest(email, password, first_name, last_name)
+  - Validate all fields present
+  - Validate email format
+  - Validate password complexity (8+ chars, number, uppercase)
+  - Check email uniqueness
+  - Hash password with bcrypt
+  - Create user document with role="guest"
+
+Authentication:
+
+- login_guest(email, password)
+  - Find user by email and role
+  - Verify password with bcrypt
+  - Return user data if successful
+
+- logout_guest()
+  - (Primarily client-side session management)
+
+Searches:
+
+- search_listings(city=None, max_price=None)
+  - Build query based on filters
+  - Check availability against existing reservations
+  - Return limited results (50) with essential fields
+
+- get_listing_details(listing_id)
+  - Retrieve full listing details
+
+Reservations:
+
+- make_reservation(user_id, listing_id, check_in, check_out, guests)
+  - Validate dates
+  - Calculate total price
+  - Create reservation record
+  - Update user's reservations list
+  - Update listing's reservations list
+
+- get_user_reservations(user_id)
+  - Retrieve all reservations for user
+  - Include listing details for each
+
+- cancel_reservation(user_id, reservation_id)
+  - Verify user owns reservation
+  - Check if cancellation is allowed (pending/confirmed status)
+  - Update status to "cancelled"
+
+- check_listing_availability(listing_id, check_in, check_out)
+  - Verify no conflicting reservations
+  - Return True/False for availability
