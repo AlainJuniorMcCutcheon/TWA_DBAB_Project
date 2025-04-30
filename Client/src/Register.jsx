@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function HostRegister() {
+export default function Register() {
   const [form, setForm] = useState({
     email: "",
     password: "",
