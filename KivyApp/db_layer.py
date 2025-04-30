@@ -1,6 +1,10 @@
 import os
 from dotenv import load_dotenv
-import bcrypt  # Add this import
+import bcrypt
+
+import logging
+
+logging.getLogger("pymongo").setLevel(logging.WARNING)
 
 try:
     from pymongo import MongoClient
