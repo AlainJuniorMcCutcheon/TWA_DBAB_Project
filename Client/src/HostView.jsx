@@ -1,4 +1,4 @@
-/* Login */
+
 import React, { useState } from 'react';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, addMonths, subMonths } from 'date-fns';
 
