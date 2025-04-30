@@ -31,14 +31,11 @@ Main Screens:
    - Search button
    - Error message display
    - Scrollable list of search results
-   - Listing name label
-   - Price label
-   - Check availability button
    - (RecyclerView for listing items)
    Not required but could be useful:
    - Sign out button
 
-5. ReservationsScreen EDIT
+5. ReservationsScreen
    - Listing name label
    - Error message display
    - Check-in date input
@@ -52,7 +49,7 @@ Main Screens:
    - Description
    - Amenities list
 
-6. ConfirmationScreen EDIT
+6. ConfirmationScreen
    - Guest name reservation's label
    - Error message display
    - Listing name label
@@ -69,19 +66,13 @@ Main Screens:
 Popups:
 
 1. ReservationPopup
-   - Listing name
-   - Price display
-   - Check-in date input
-   - Check-out date input
-   - Number of guests input
-   - Total price calculation
-   - Confirm button
-   - Cancel button
+   - Listing name label
+   - Price label
+   - Check availability button
 
 2. ReservationDetailPopup
    - Reservation details
-   - Cancel reservation button (if allowed)
-   - Close button
+   - Cancel reservation button
 
 ===========================
 db_layer.py Required Functions
