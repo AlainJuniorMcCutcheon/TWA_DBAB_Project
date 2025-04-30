@@ -5,26 +5,26 @@
         orientation: 'vertical'
         padding: 50
         spacing: 20
-        
+
         Label:
             text: 'Welcome'
             font_size: 32
             bold: True
             halign: 'center'
-        
+
         Button:
             text: 'Login'
             size_hint_y: None
             height: 50
-            on_press: 
+            on_press:
                 root.manager.current = 'login'
                 root.manager.transition.direction = 'left'
-            
+
         Button:
             text: 'Register'
             size_hint_y: None
             height: 50
-            on_press: 
+            on_press:
                 root.manager.current = 'register'
                 root.manager.transition.direction = 'left'
 
@@ -33,38 +33,38 @@
         orientation: 'vertical'
         padding: 50
         spacing: 20
-        
+
         Label:
             text: 'Register'
             font_size: 24
             halign: 'center'
-        
+
         TextInput:
             hint_text: 'Email'
             id: email
             multiline: False
             input_type: 'text'
             write_tab: False
-        
+
         TextInput:
             hint_text: 'Password'
             id: password
             password: True
             multiline: False
             write_tab: False
-        
+
         TextInput:
             hint_text: 'First Name'
             id: first_name
             multiline: False
             write_tab: False
-        
+
         TextInput:
             hint_text: 'Last Name'
             id: last_name
             multiline: False
             write_tab: False
-        
+
         BoxLayout:
             spacing: 10
             size_hint_y: None
@@ -74,10 +74,10 @@
                 on_press: app.register_guest()
             Button:
                 text: 'Cancel'
-                on_press: 
+                on_press:
                     root.manager.current = 'welcome'
                     root.manager.transition.direction = 'right'
-        
+
         Label:
             id: error_label
             text: ''
@@ -90,26 +90,26 @@
         orientation: 'vertical'
         padding: 50
         spacing: 20
-        
+
         Label:
             text: 'Please Sign In'
             font_size: 24
             halign: 'center'
-        
+
         TextInput:
             hint_text: 'Email'
             id: email
             multiline: False
             input_type: 'text'
             write_tab: False
-        
+
         TextInput:
             hint_text: 'Password'
             id: password
             password: True
             multiline: False
             write_tab: False
-        
+
         BoxLayout:
             spacing: 10
             size_hint_y: None
@@ -119,10 +119,10 @@
                 on_press: app.login_guest()
             Button:
                 text: 'Back'
-                on_press: 
+                on_press:
                     root.manager.current = 'welcome'
                     root.manager.transition.direction = 'right'
-        
+
         Label:
             id: error_label
             text: ''
@@ -135,36 +135,36 @@
         orientation: 'vertical'
         padding: 20
         spacing: 20
-        
+
         Label:
             text: 'Search Listings'
             font_size: 24
             halign: 'center'
-        
+
         BoxLayout:
             orientation: 'vertical'
             spacing: 10
             size_hint_y: None
             height: 120
-            
+
             TextInput:
                 hint_text: 'City'
                 id: city
                 size_hint_y: None
                 height: 50
-            
+
             TextInput:
                 hint_text: 'Max Price'
                 id: max_price
                 input_filter: 'int'
                 size_hint_y: None
                 height: 50
-        
+
         Button:
             text: 'Search'
             size_hint_y: None
             height: 50
-        
+
         Button:
             text: 'Sign Out'
             size_hint_y: None
