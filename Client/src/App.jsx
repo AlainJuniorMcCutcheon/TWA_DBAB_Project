@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Login.jsx';
-import {Register} from './Register.jsx';
+import Register from './Register.jsx';
 
 function App() {
   return (
