@@ -1,0 +1,11 @@
+.env
+<<<<<<< HEAD
+*.env
+
+Server/node_modules
+
+=======
+node_modules
+*.env
+
+>>>>>>> 870ef62c5d076fab4ca5b7f9435ecf45f8fcae4b
