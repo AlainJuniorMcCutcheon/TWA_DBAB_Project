@@ -1,3 +1,4 @@
+# http request in python needed
 import os
 from dotenv import load_dotenv
 import bcrypt

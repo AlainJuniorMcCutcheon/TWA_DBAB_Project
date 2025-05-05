@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-/* current register form*/
 export default function Register() {
   const [form, setForm] = useState({
     email: "",
@@ -11,50 +10,71 @@ export default function Register() {
     lastName: "",
     hostId: "",
   });
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
   const navigate = useNavigate();
 
-  const validateForm = async () => {
-    const { email, password, confirmPassword, firstName, lastName, hostId } = form;
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const hasNumber = /\d/;
-    const hasUpperCase = /[A-Z]/;
-
-    if (!email || !password || !confirmPassword || !firstName || !lastName || !hostId) {
-      return "All fields are required.";
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+    
+    switch (name) {
+      case 'email':
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          newErrors.email = 'Invalid email format';
+        } else {
+          delete newErrors.email;
+        }
+        break;
+        
+      case 'password':
+        if (!/\d/.test(value)) {
+          newErrors.password = 'Must contain a number';
+        } else if (!/[A-Z]/.test(value)) {
+          newErrors.password = 'Must contain an uppercase letter';
+        } else if (value.length < 8) {
+          newErrors.password = 'Must be at least 8 characters';
+        } else {
+          delete newErrors.password;
+        }
+        break;
+        
+      case 'confirmPassword':
+        if (value !== form.password) {
+          newErrors.confirmPassword = 'Passwords do not match';
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+        
+      default:
+        if (!value) {
+          newErrors[name] = 'This field is required';
+        } else {
+          delete newErrors[name];
+        }
     }
-    if (!emailRegex.test(email)) return "Invalid email format.";
-    if (!hasNumber.test(password) || !hasUpperCase.test(password))
-      return "Password must contain a number and an uppercase letter.";
-    if (password !== confirmPassword) return "Passwords do not match.";
+    
+    setErrors(newErrors);
+  };
 
-    // Host ID validation (simulate a call to the server for now)
-    const res = await fetch("http://localhost:3000/api/hosts/validate-host-id", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hostId }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.valid) return data.message || "Invalid Host ID.";
-
-    return null;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    validateField(name, value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    const validationError = await validateForm();
-    if (validationError) {
-      setErrorMsg(validationError);
-      return;
-    }
+    
+    // Validate all fields
+    Object.entries(form).forEach(([name, value]) => {
+      validateField(name, value);
+    });
+    
+    if (Object.keys(errors).length > 0) return;
 
     try {
-      const res = await fetch("http://localhost:3000/api/hosts/register", {
+      const res = await fetch("http://localhost:5000/api/hosts/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -62,86 +82,122 @@ export default function Register() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMsg("Account created! Redirecting to sign in...");
+        setSuccessMsg("Registration successful! Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000);
       } else {
-        setErrorMsg(data.message || "Registration failed.");
+        setErrors({ server: data.message || "Registration failed" });
       }
     } catch (err) {
       console.error("Registration error:", err);
-      setErrorMsg("Server error. Please try again.");
+      setErrors({ server: "Server error. Please try again." });
     }
   };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setErrorMsg("");
-    setSuccessMsg("");
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md space-y-4"
-      >
-        <h2 className="text-xl font-bold text-center text-gray-700">Host Registration</h2>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2 className="auth-title">Host Registration</h2>
+        
+        <form className="auth-form" onSubmit={handleSubmit}>
+          {errors.server && <p className="error-message">{errors.server}</p>}
+          {successMsg && <p className="success-message">{successMsg}</p>}
 
-        {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
-        {successMsg && <p className="text-green-600 text-sm">{successMsg}</p>}
-
-        {["email", "firstName", "lastName", "hostId"].map((field) => (
-          <div key={field}>
-            <label className="block text-sm font-medium capitalize">{field}</label>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
             <input
-              type="text"
-              name={field}
-              value={form[field]}
+              id="email"
+              type="email"
+              name="email"
+              value={form.email}
               onChange={handleChange}
               required
-              className="mt-1 w-full rounded border-gray-300 shadow-sm focus:ring focus:ring-blue-300"
+              className={errors.email ? 'error' : ''}
+            />
+            {errors.email && <span className="error-message">{errors.email}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className={errors.password ? 'error' : ''}
+            />
+            {errors.password && <span className="error-message">{errors.password}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              name="confirmPassword"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+              className={errors.confirmPassword ? 'error' : ''}
+            />
+            {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="firstName">First Name</label>
+            <input
+              id="firstName"
+              type="text"
+              name="firstName"
+              value={form.firstName}
+              onChange={handleChange}
+              required
             />
           </div>
-        ))}
 
-        <div>
-          <label className="block text-sm font-medium">Password</label>
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="mt-1 w-full rounded border-gray-300 shadow-sm focus:ring focus:ring-blue-300"
-          />
-        </div>
+          <div className="form-group">
+            <label htmlFor="lastName">Last Name</label>
+            <input
+              id="lastName"
+              type="text"
+              name="lastName"
+              value={form.lastName}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium">Confirm Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            required
-            className="mt-1 w-full rounded border-gray-300 shadow-sm focus:ring focus:ring-blue-300"
-          />
-        </div>
+          <div className="form-group">
+            <label htmlFor="hostId">Host ID</label>
+            <input
+              id="hostId"
+              type="text"
+              name="hostId"
+              value={form.hostId}
+              onChange={handleChange}
+              required
+              className={errors.hostId ? 'error' : ''}
+            />
+            {errors.hostId && <span className="error-message">{errors.hostId}</span>}
+          </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-        >
-          Register
-        </button>
+          <button 
+            type="submit" 
+            className="auth-button"
+            disabled={Object.keys(errors).length > 0}
+          >
+            Register
+          </button>
+        </form>
 
-        <p className="text-center text-sm text-gray-500 mt-2">
+        <p className="auth-footer">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
+          <a href="/login" className="auth-link">
             Sign in
           </a>
         </p>
-      </form>
+      </div>
     </div>
   );
 }
