@@ -1,5 +1,5 @@
 import express from 'express';
-import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRouter from './routers/authRouter.js';
@@ -25,18 +25,19 @@ app.use('/host', hostRouter);
 app.use('/guest', guestRouter);
 app.use('/listings', listingRouter);
 
-// Connect to MongoDB
-const client = new MongoClient(mongoUri);
 
-client.connect()
-  .then(() => {
-    console.log("Connected to MongoDB.");
-    // Start the server only after the connection is established
-    app.listen(5000, () => {
-      console.log("Server running on port 5000");
-    });
-  })
-  .catch((err) => {
-    console.error("Error connecting to MongoDB:", err);
+// Connect to MongoDB using Mongoose
+mongoose.connect(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log("Connected to MongoDB via Mongoose.");
+  app.listen(5000, () => {
+    console.log("Server running on port 5000");
   });
+})
+.catch((err) => {
+  console.error("Error connecting to MongoDB:", err);
+});
 

@@ -1,2 +1,5 @@
 .env
 *.env
+
+Server/node_modules
+
