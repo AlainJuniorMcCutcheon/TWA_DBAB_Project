@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState } from 'react';
 import Login from './Login.jsx';
 import Register from './Register.jsx';
-import Dashboard from './Dashboard.jsx';
+import Dashboard from './dashboard.jsx';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
