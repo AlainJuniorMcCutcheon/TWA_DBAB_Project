@@ -6,15 +6,19 @@ import { authenticateToken } from './authMiddleware.js';
 dotenv.config();
 
 const reservationRouter = express.Router();
-const uri = process.env.MONGO_URI;
+ // const uri = process.env.MONGO_URI;
+const uri = 'mongodb+srv://MrBinks:WzyKgQl7J44WKjR1@freeworld.5dellif.mongodb.net/AirBnB?retryWrites=true&w=majority&appName=FreeWorld';
 const client = new MongoClient(uri);
-const dbName = 'AirBnB';
 let reservationCollection;
+
+//const MONGO_URI = 'mongodb+srv://MrBinks:WzyKgQl7J44WKjR1@freeworld.5dellif.mongodb.net/AirBnB?retryWrites=true&w=majority&appName=FreeWorld';
+const DB_NAME = 'AirBnB';
 
 client.connect()
   .then(() => {
-    const db = client.db(dbName);
-    reservationCollection = db.collection("Reservation"); // Corrected collection name
+    // const db = client.db(process.env.DB_NAME);
+    const db = client.db(DB_NAME);
+    reservationCollection = db.collection("Reservations"); // Corrected collection name
     console.log('Connected to MongoDB: Reservations ready');
   })
   .catch((err) => {
@@ -69,6 +73,90 @@ reservationRouter.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Reservation deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting reservation', error: err.message });
+  }
+});
+
+// Add this new endpoint to your reservation router
+reservationRouter.get('/host/:hostId', authenticateToken, async (req, res) => {
+  const { hostId } = req.params;
+
+  try {
+    const db = client.db(DB_NAME);
+    
+    // First get all listings for this host
+    const listings = await db.collection('Listings')
+      .find({ 
+        $or: [
+          { hostId: hostId },
+          { 'host.host_id': hostId }
+        ]
+      })
+      .toArray();
+
+    if (!listings.length) {
+      return res.json({ 
+        reservations: [], 
+        listings: [],
+        message: 'No listings found for this host'
+      });
+    }
+
+    const listingIds = listings.map(l => l._id.toString());
+    
+    // Then get all reservations for these listings
+    const reservations = await db.collection('Reservations')
+      .find({ listingId: { $in: listingIds } })
+      .toArray();
+
+    // Add listing info to each reservation
+    const reservationsWithDetails = reservations.map(res => {
+      const listing = listings.find(l => l._id.toString() === res.listingId);
+      return {
+        ...res,
+        listing_title: listing?.title || 'Unknown Listing',
+        host: listing?.host?.name || 'Unknown Host'
+      };
+    });
+
+    res.json({
+      reservations: reservationsWithDetails,
+      listings: listings.map(l => ({
+        _id: l._id.toString(),
+        title: l.title
+      }))
+    });
+    
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ 
+      message: 'Error fetching host reservations',
+      error: err.message 
+    });
+  }
+});
+
+
+// Add this endpoint for status updates
+reservationRouter.patch('/:id/status', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    const result = await reservationCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+
+    res.json({ message: 'Reservation status updated' });
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Error updating reservation status', 
+      error: err.message 
+    });
   }
 });
 

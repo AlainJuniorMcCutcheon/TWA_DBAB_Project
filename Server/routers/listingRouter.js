@@ -30,7 +30,7 @@ listingRouter.get('/', authenticateToken, async (req, res) => {
   console.log('Authenticated user:', req.user); // Log the user to check
 
   try {
-    const db = client.db('AirBnB');
+    const db = client.db(process.env.DB_NAME);
     const listings = await db.collection('Listings').find({}).toArray();
     res.json(listings);
   } catch (err) {
@@ -60,7 +60,7 @@ listingRouter.post('/', authenticateToken, async (req, res) => {
   };
 
   try {
-    const db = client.db('AirBnB');
+    const db = client.db(process.env.DB_NAME);
     const result = await db.collection('Listings').insertOne(newListing);
     res.status(201).json({ message: 'Listing created', id: result.insertedId });
   } catch (err) {

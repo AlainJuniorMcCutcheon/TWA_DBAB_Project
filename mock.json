@@ -1,0 +1,55 @@
+[
+      {
+        "_id": "1",
+        "hostId": "123",
+        "host": "Francis Gauthier",
+        "guest": "John Doe",
+        "listingId": "1",
+        "listing_title": "Modern Spacious 1 Bedroom Loft",
+        "check_in": "2025-03-31",
+        "check_out": "2025-04-02",
+        "guests": 2,
+        "total_price": 1000.00,
+        "status": "COMPLETED"
+      },
+      {
+        "_id": "2",
+        "hostId": "123",
+        "host": "Francis Gauthier",
+        "guest": "Jane Smith",
+        "listingId": "1",
+        "listing_title": "Modern Spacious 1 Bedroom Loft",
+        "check_in": "2025-04-10",
+        "check_out": "2025-04-15",
+        "guests": 3,
+        "total_price": 1500.00,
+        "status": "CONFIRMED"
+      },
+      {
+        "_id": "3",
+        "hostId": "123",
+        "host": "Francis Gauthier",
+        "guest": "Mike Johnson",
+        "listingId": "2",
+        "listing_title": "Cozy Downtown Apartment",
+        "check_in": "2025-04-20",
+        "check_out": "2025-04-22",
+        "guests": 2,
+        "total_price": 800.00,
+        "status": "PENDING"
+      },
+      {
+        "_id": "4",
+        "hostId": "456",
+        "host": "Another Host",
+        "guest": "Sarah Williams",
+        "listingId": "3",
+        "listing_title": "Luxury Penthouse",
+        "check_in": "2025-05-01",
+        "check_out": "2025-05-07",
+        "guests": 4,
+        "total_price": 2500.00,
+        "status": "CANCELLED"
+      }
+    
+]
