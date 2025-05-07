@@ -140,33 +140,73 @@
             text: 'Search Listings'
             font_size: 24
             halign: 'center'
+            size_hint_y: None
+            height: 40
 
         BoxLayout:
-            orientation: 'vertical'
+            orientation: 'horizontal'
             spacing: 10
             size_hint_y: None
-            height: 120
+            height: 50
 
             TextInput:
                 hint_text: 'City'
                 id: city
-                size_hint_y: None
-                height: 50
 
             TextInput:
                 hint_text: 'Max Price'
                 id: max_price
                 input_filter: 'int'
+
+            Button:
+                text: 'Search'
+                size_hint_x: None
+                width: 100
+                on_press: app.show_listings()
+
+        ScrollView:
+            BoxLayout:
+                id: listings_box
+                orientation: 'vertical'
                 size_hint_y: None
-                height: 50
-
-        Button:
-            text: 'Search'
-            size_hint_y: None
-            height: 50
-
+                height: self.minimum_height
+                spacing: 10
+                
         Button:
             text: 'Sign Out'
             size_hint_y: None
             height: 50
             on_press: app.logout_guest()
+
+<ReservationScreen>:
+    name: 'reservation'
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 20
+        spacing: 20
+        
+        Label:
+            text: 'Reservation Details'
+            font_size: 24
+            bold: True
+            halign: 'center'
+
+        Label:
+            id: listing_name
+            text: 'Listing Name: N/A'
+
+        Label:
+            id: listing_price
+            text: 'Price: $0.00'
+
+        Label:
+            id: listing_location
+            text: 'Location: N/A'
+
+        Button:
+            text: 'Confirm Reservation'
+            on_press: app.confirm_reservation()
+
+        Button:
+            text: 'Back to Search'
+            on_press: app.root.current = 'search'
