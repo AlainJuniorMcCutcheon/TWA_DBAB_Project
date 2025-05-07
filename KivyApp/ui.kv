@@ -191,6 +191,16 @@
             bold: True
             halign: 'center'
 
+        
+        AsyncImage:
+            id: listing_image
+            source: 'default.jpg' 
+            size_hint: None, None 
+            width: 400 
+            height: 300 
+            allow_stretch: True  
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5} 
+
         Label:
             id: listing_name
             text: 'Listing Name: N/A'
@@ -202,6 +212,7 @@
         Label:
             id: listing_location
             text: 'Location: N/A'
+
 
         Button:
             text: 'Confirm Reservation'

@@ -4,7 +4,8 @@ from kivy.lang import Builder
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from db_layer import db_layer  # Make sure your db_layer is imported correctly
+from kivy.uix.image import AsyncImage
+from db_layer import db_layer
 from bson import Decimal128
 from decimal import Decimal
 
@@ -24,12 +25,16 @@ class SearchScreen(Screen):
 
 class ReservationScreen(Screen):
     def display_listing_details(self, listing):
-        # Display listing details on the ReservationScreen
         self.ids.listing_name.text = f"Listing Name: {listing.get('name', 'N/A')}"
         self.ids.listing_price.text = f"Price: ${listing.get('price', 0)}/night"
-        self.ids.listing_location.text = f"Location: {listing.get('address', {}).get('market', 'N/A')}"
-        
-        # Store the listing for future use if needed (e.g., for confirming reservation)
+
+        # Correct way to extract picture_url
+        picture_url = listing.get('images', [{}]).get('picture_url')
+        if picture_url:
+            self.ids.listing_image.source = picture_url
+        else:
+            self.ids.listing_image.source = 'default.jpg'  # fallback image
+
         self.listing = listing
 
 class MyScreenManager(ScreenManager):
@@ -38,7 +43,7 @@ class MyScreenManager(ScreenManager):
 class BnbApp(App):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.current_user = None  # Track logged in user
+        self.current_user = None  # Keeps track of the logged-in user
 
     def build(self):
         self.sm = ScreenManager()
@@ -46,8 +51,15 @@ class BnbApp(App):
         self.sm.add_widget(LoginScreen(name='login'))
         self.sm.add_widget(RegisterScreen(name='register'))
         self.sm.add_widget(SearchScreen(name='search'))
-        self.sm.add_widget(ReservationScreen(name='reservation'))  # Add ReservationScreen
+        self.sm.add_widget(ReservationScreen(name='reservation'))
         return self.sm
+
+    def logout_guest(self):
+        # Clear the current user session
+        self.current_user = None
+        
+        # Navigate back to the LoginScreen
+        self.root.current = 'login'
 
     def register_guest(self):
         screen = self.root.get_screen('register')
@@ -70,7 +82,7 @@ class BnbApp(App):
 
         result = db_layer.login_guest(email, password)
         if result.get('success'):
-            self.current_user = {  # Store user data
+            self.current_user = {
                 'user_id': result['user_id'],
                 'email': email,
                 'first_name': result['first_name'],
@@ -81,88 +93,80 @@ class BnbApp(App):
         else:
             screen.ids.error_label.text = result.get('message')
 
-    
     def show_listings(self):
-            screen = self.root.get_screen('search')
-            listings_box = screen.ids.listings_box
-            listings_box.clear_widgets()
+        screen = self.root.get_screen('search')
+        listings_box = screen.ids.listings_box
+        listings_box.clear_widgets()
 
-            city = screen.ids.city.text.strip().lower()
-            max_price_text = screen.ids.max_price.text.strip()
+        city = screen.ids.city.text.strip().lower()
+        max_price_text = screen.ids.max_price.text.strip()
+        max_price = int(max_price_text) if max_price_text.isdigit() else float('inf')
 
-            # Handle max price (set to infinity if not entered correctly)
-            max_price = int(max_price_text) if max_price_text.isdigit() else float('inf')
+        result = db_layer.get_filtered_listings()
+        if result.get('success'):
+            listings = result['listings']
+            filtered = []
 
-            result = db_layer.get_filtered_listings()  # Get all listings (without filters yet)
-            if result.get('success'):
-                listings = result['listings']
-                filtered = []
+            for l in listings:
+                price = self.convert_decimal128_to_float(l.get('price', 0))
 
-                for l in listings:
-                    print(f"Checking listing {l.get('name')} with price {l.get('price')}")
+                if city and city not in l.get('address', {}).get('market', '').lower():
+                    continue
+                if price is not None and price > max_price:
+                    continue
 
-                    # Handle Decimal128 price conversion to float
-                    price = self.convert_decimal128_to_float(l.get('price', 0))
+                filtered.append(l)
 
-                    # Filter by city (market field in address)
-                    if city and city not in l.get('address', {}).get('market', '').lower():
-                        continue  # Skip listing if city doesn't match
+            if not filtered:
+                listings_box.add_widget(Label(text="No listings match your search."))
+                return
 
-                    # Filter by max price
-                    if price is not None and price > max_price:
-                        continue  # Skip listing if price is greater than max_price
+            for listing in filtered:
+                row = BoxLayout(orientation='horizontal', size_hint_y=None, height=120, spacing=10)
 
-                    filtered.append(l)
+                # Extract the picture URL
+                picture_url = listing.get('images', [{}]).get('picture_url')
 
-                if not filtered:
-                    listings_box.add_widget(Label(text="No listings match your search."))
-                    return
+                image = AsyncImage(
+                    source=picture_url if picture_url else 'default.jpg',
+                    size_hint_x=None,
+                    width=100
+                )
 
-                for listing in filtered:
-                    # Create the row layout (Horizontal BoxLayout)
-                    row = BoxLayout(orientation='horizontal', size_hint_y=None, height=100, spacing=10)
+                listing_text = f"[b]{listing.get('name', 'Untitled')}[/b]\nLocation: {listing.get('address', {}).get('market', 'N/A')}\nPrice: ${self.convert_decimal128_to_float(listing.get('price', 0))}/night"
+                label = Label(text=listing_text, markup=True, halign="left", valign="middle")
+                label.bind(size=label.setter('text_size'))
 
-                    # Create the label for the listing
-                    listing_text = f"[b]{listing.get('name', 'Untitled')}[/b]\nLocation: {listing.get('address', {}).get('market', 'N/A')}\nPrice: ${self.convert_decimal128_to_float(listing.get('price', 0))}/night"
-                    label = Label(
-                        text=listing_text,
-                        markup=True,
-                        halign="left",
-                        valign="middle"
-                    )
-                    label.bind(size=label.setter('text_size'))  # Ensure text wraps properly
+                check_button = Button(
+                    text="Check Availability",
+                    size_hint_x=None,
+                    width=160
+                )
+                
+                # Bind button click to the check_availability method and pass the listing
 
-                    # Create the "Check Availability" button
-                    check_button = Button(
-                        text="Check Availability",
-                        size_hint_x=None,
-                        width=160  # Control the width of the button
-                    )
-                    check_button.on_press = lambda l=listing: self.check_availability(l)
+                
+                check_button.bind(on_press=lambda instance, l=listing: self.check_availability(l))
 
-                    # Add the label and button to the row layout
-                    row.add_widget(label)
-                    row.add_widget(check_button)
+                row.add_widget(image)
+                row.add_widget(label)
+                row.add_widget(check_button)
+                listings_box.add_widget(row)
 
-                    # Add the row layout to the listings box
-                    listings_box.add_widget(row)
-
-            else:
-                listings_box.add_widget(Label(text="Error loading listings."))
+        else:
+            listings_box.add_widget(Label(text="Error loading listings."))
 
     def check_availability(self, listing):
-        # Navigate to ReservationScreen with the listing details
         reservation_screen = self.root.get_screen('reservation')
         reservation_screen.display_listing_details(listing)
         self.root.current = 'reservation'
 
     def convert_decimal128_to_float(self, value):
-        """Convert Decimal128 to float, handling the case where it's not a Decimal128."""
         if isinstance(value, Decimal128):
-            return float(value.to_decimal())  
+            return float(value.to_decimal())
         elif isinstance(value, Decimal):
-            return float(value) 
-        return float(value)  
+            return float(value)
+        return float(value)
 
 if __name__ == '__main__':
     BnbApp().run()
