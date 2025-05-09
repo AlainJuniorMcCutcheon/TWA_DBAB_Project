@@ -130,6 +130,7 @@
             size_hint_y: None
             height: 30
 
+
 <SearchScreen>:
     BoxLayout:
         orientation: 'vertical'
@@ -164,13 +165,17 @@
                 width: 100
                 on_press: app.show_listings()
 
-        ScrollView:
-            BoxLayout:
-                id: listings_box
+        RecycleView:
+            id: listings_rv
+            viewclass: 'ListingItem'
+            size_hint_y: 1
+            RecycleBoxLayout:
                 orientation: 'vertical'
+                spacing: 10
+                default_size: None, 120
+                default_size_hint: 1, None
                 size_hint_y: None
                 height: self.minimum_height
-                spacing: 10
                 
         Button:
             text: 'Sign Out'
@@ -221,3 +226,28 @@
         Button:
             text: 'Back to Search'
             on_press: app.root.current = 'search'
+
+<ListingItem@BoxLayout>:
+    orientation: 'horizontal'
+    spacing: 10
+    size_hint_y: None
+    height: 120
+
+    AsyncImage:
+        source: root.image_source
+        size_hint_x: None
+        width: 100
+
+    Label:
+        text: root.listing_text
+        markup: True
+        halign: "left"
+        valign: "middle"
+        text_size: self.size
+
+    Button:
+        text: 'Check Availability'
+        size_hint_x: None
+        width: 160
+        on_press: app.check_availability(root.listing_data)
+

@@ -95,8 +95,7 @@ class BnbApp(App):
 
     def show_listings(self):
         screen = self.root.get_screen('search')
-        listings_box = screen.ids.listings_box
-        listings_box.clear_widgets()
+        rv = screen.ids.listings_rv
 
         city = screen.ids.city.text.strip().lower()
         max_price_text = screen.ids.max_price.text.strip()
@@ -109,52 +108,31 @@ class BnbApp(App):
 
             for l in listings:
                 price = self.convert_decimal128_to_float(l.get('price', 0))
-
                 if city and city not in l.get('address', {}).get('market', '').lower():
                     continue
                 if price is not None and price > max_price:
                     continue
 
-                filtered.append(l)
+                filtered.append({
+                    'image_source': l.get('images', {}).get('picture_url', 'default.jpg'),
+                    'listing_text': f"[b]{l.get('name', 'Untitled')}[/b]\nLocation: {l.get('address', {}).get('market', 'N/A')}\nPrice: ${price}/night",
+                    'listing_data': l
+                })
 
             if not filtered:
-                listings_box.add_widget(Label(text="No listings match your search."))
-                return
+                filtered.append({
+                    'image_source': 'default.jpg',
+                    'listing_text': "No listings match your search.",
+                    'listing_data': {}
+                })
 
-            for listing in filtered:
-                row = BoxLayout(orientation='horizontal', size_hint_y=None, height=120, spacing=10)
-
-                # Extract the picture URL
-                picture_url = listing.get('images', [{}]).get('picture_url')
-
-                image = AsyncImage(
-                    source=picture_url if picture_url else 'default.jpg',
-                    size_hint_x=None,
-                    width=100
-                )
-
-                listing_text = f"[b]{listing.get('name', 'Untitled')}[/b]\nLocation: {listing.get('address', {}).get('market', 'N/A')}\nPrice: ${self.convert_decimal128_to_float(listing.get('price', 0))}/night"
-                label = Label(text=listing_text, markup=True, halign="left", valign="middle")
-                label.bind(size=label.setter('text_size'))
-
-                check_button = Button(
-                    text="Check Availability",
-                    size_hint_x=None,
-                    width=160
-                )
-                
-                # Bind button click to the check_availability method and pass the listing
-
-                
-                check_button.bind(on_press=lambda instance, l=listing: self.check_availability(l))
-
-                row.add_widget(image)
-                row.add_widget(label)
-                row.add_widget(check_button)
-                listings_box.add_widget(row)
-
+            rv.data = filtered
         else:
-            listings_box.add_widget(Label(text="Error loading listings."))
+            rv.data = [{
+                'image_source': 'default.jpg',
+                'listing_text': "Error loading listings.",
+                'listing_data': {}
+            }]
 
     def check_availability(self, listing):
         reservation_screen = self.root.get_screen('reservation')
