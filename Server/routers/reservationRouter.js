@@ -1,7 +1,7 @@
 import express from 'express';
 import { MongoClient, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
-import { authenticateToken } from './authMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 dotenv.config();
 
@@ -76,13 +76,17 @@ reservationRouter.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Add this new endpoint to your reservation router
 reservationRouter.get('/hosts', authenticateToken, async (req, res) => {
   try {
     const db = client.db(DB_NAME);
-    const hostId = req.user.hostId; // Get hostId from authenticated user
+    const hostId = req.user.hostId; // Get hostId from JWT token
     
-    // Rest of your existing host reservations logic
+    // First, get all reservations directly by hostId
+    const directReservations = await db.collection('Reservations')
+      .find({ hostId: hostId })
+      .toArray();
+
+    // Then get reservations via listings (original approach)
     const listings = await db.collection('Listings')
       .find({ 
         $or: [
@@ -92,33 +96,19 @@ reservationRouter.get('/hosts', authenticateToken, async (req, res) => {
       })
       .toArray();
 
-    if (!listings.length) {
-      return res.json({ 
-        reservations: [], 
-        listings: [],
-        message: 'No listings found for this host'
-      });
-    }
-
     const listingIds = listings.map(l => l._id.toString());
-    
-    // Then get all reservations for these listings
-    const reservations = await db.collection('Reservations')
+    const reservationsByListings = await db.collection('Reservations')
       .find({ listingId: { $in: listingIds } })
       .toArray();
 
-    // Add listing info to each reservation
-    const reservationsWithDetails = reservations.map(res => {
-      const listing = listings.find(l => l._id.toString() === res.listingId);
-      return {
-        ...res,
-        listing_title: listing?.title || 'Unknown Listing',
-        host: listing?.host?.name || 'Unknown Host'
-      };
-    });
+    // Combine both results and remove duplicates
+    const allReservations = [...directReservations, ...reservationsByListings];
+    const uniqueReservations = allReservations.filter(
+      (res, index, self) => index === self.findIndex(t => t._id.toString() === res._id.toString())
+    );
 
     res.json({
-      reservations: reservationsWithDetails,
+      reservations: uniqueReservations,
       listings: listings.map(l => ({
         _id: l._id.toString(),
         title: l.title

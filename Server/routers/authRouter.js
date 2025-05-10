@@ -1,3 +1,5 @@
+// !! npm install cookie-parser !!
+
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -118,11 +120,11 @@ authRouter.post('/hosts/login', async (req, res) => {
         const token = jwt.sign(
           { 
             userId: host._id,       // Keep MongoDB's _id if needed
-    hostId: host.hostId,    // This is the crucial field (51496939 from your example)
-    email: host.email,
-    role: host.role,
-    firstName: host.firstName,
-    lastName: host.lastName
+            hostId: host.hostId,    // This is the crucial field (51496939 from your example)
+            email: host.email,
+            role: host.role,
+            firstName: host.firstName,
+            lastName: host.lastName
           },
           process.env.JWT_SECRET,
           { expiresIn: '1h' }
@@ -133,7 +135,9 @@ authRouter.post('/hosts/login', async (req, res) => {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
-          maxAge: 3600000
+          maxAge: 3600000,
+          path: '/',
+          domain: 'localhost'
       });
 
         res.json({ 

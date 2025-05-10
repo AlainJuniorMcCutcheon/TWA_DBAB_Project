@@ -17,51 +17,41 @@ export default function Dashboard({ setIsAuthenticated }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchHostReservations = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Remove localStorage token check - we'll rely on cookies
-        const response = await fetch(`http://localhost:5000/api/reservations/hosts`, {
-          credentials: 'include', // This sends cookies with the request
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+const fetchHostReservations = async () => {
+  try {
+    const response = await fetch(`http://localhost:5000/reservations/hosts`, {
+      credentials: 'include'
+    });
     
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Server error: ${response.status} - ${errorText}`);
-        }
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('API Response Data:', data); // Add this line
     
-        const data = await response.json();
-        if (!data.reservations) throw new Error('Invalid response format');
-    
-        // Transform data
-        const transformed = data.reservations.map(res => ({
-          ...res,
-          listingTitle: res.listing_title || 'Unknown Listing',
-          checkIn: res.check_in,
-          checkOut: res.check_out,
-          totalPrice: res.total_price,
-          host: res.host || 'Unknown Host'
-        }));
-    
-        setReservations(transformed);
-        setFilteredReservations(transformed);
-        setHostListings(data.listings || []);
-        
-      } catch (error) {
-        console.error('Fetch error:', error);
-        setError(error.message);
-        if (error.message.includes('401')) {
-          navigate('/login'); // Redirect if unauthorized
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (!data.reservations) throw new Error('Invalid response format');
+
+    const transformed = data.reservations.map(res => ({
+      ...res,
+      listingTitle: res.listing_title || 'Unknown Listing',
+      checkIn: res.check_in,
+      checkOut: res.check_out,
+      totalPrice: res.total_price,
+      host: res.host || 'Unknown Host'
+    }));
+
+    console.log('Transformed Reservations:', transformed); // Add this line
+    setReservations(transformed);
+    setFilteredReservations(transformed);
+    setHostListings(data.listings || []);
+  } catch (error) {
+    console.error('Full error:', error); // More detailed error logging
+    setError(error.message);
+    if (error.message.includes('401')) {
+      navigate('/login');
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
     fetchHostReservations(); // Don't forget to call the function
   }, []); // <-- This closes the first useEffect
@@ -129,7 +119,7 @@ export default function Dashboard({ setIsAuthenticated }) {
 
   const handleLogout = async () => {
     try {
-      await fetch("/auth/hosts/logout", {
+      await fetch("http://localhost:5000/auth/hosts/logout", {
         method: "POST",
         credentials: 'include'
       });

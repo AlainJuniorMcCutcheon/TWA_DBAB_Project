@@ -2,10 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import authRouter from './routers/authRouter.js';
-import hostRouter from './routers/hostRouter.js';
-import guestRouter from './routers/GuestRouter.js';
-import listingRouter from './routers/listingRouter.js';
+import reservationRouter from './routers/reservationRouter.js';
 import { authenticateHost } from './middleware/authMiddleware.js';
 
 dotenv.config();
@@ -17,13 +16,15 @@ const app = express();
 const allowedOrigins = ['http://localhost:5173']; // Add production URL when needed
 
 const corsOptions = {
-  origin: 'http://localhost:5173', // Your frontend URL
-  credentials: true, // Required for cookies
+  origin: 'http://localhost:5173',
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 };
 
 app.use(cors(corsOptions));
+
+app.use(cookieParser());
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
@@ -33,14 +34,13 @@ app.use(express.json());
 
 // Routes
 app.use('/auth', authRouter);
-app.use('/host', hostRouter);
-app.use('/guest', guestRouter);
-app.use('/listings', listingRouter);
 
 // Protected host route example
 app.get('/api/hosts/dashboard', authenticateHost, (req, res) => {
   res.json({ message: 'Welcome to your dashboard' });
 });
+
+app.use('/reservations', reservationRouter);
 
 // Connect to MongoDB using Mongoose
 mongoose.connect(process.env.MONGO_URI, {
