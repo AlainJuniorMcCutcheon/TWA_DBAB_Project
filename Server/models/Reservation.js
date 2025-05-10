@@ -77,13 +77,12 @@ reservationRouter.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // Add this new endpoint to your reservation router
-reservationRouter.get('/host/:hostId', authenticateToken, async (req, res) => {
-  const { hostId } = req.params;
-
+reservationRouter.get('/hosts', authenticateToken, async (req, res) => {
   try {
     const db = client.db(DB_NAME);
+    const hostId = req.user.hostId; // Get hostId from authenticated user
     
-    // First get all listings for this host
+    // Rest of your existing host reservations logic
     const listings = await db.collection('Listings')
       .find({ 
         $or: [

@@ -22,19 +22,10 @@ export default function Dashboard({ setIsAuthenticated }) {
       setError(null);
       
       try {
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error('No authentication token found');
-    
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('Token payload:', payload);
-        
-        // Get hostId from token - this is the critical change
-        const hostId = payload.hostId;
-  if (!hostId) throw new Error('No host identifier found in token');
-    
-        const response = await fetch(`http://localhost:5000/api/reservations/host/${hostId}`, {
+        // Remove localStorage token check - we'll rely on cookies
+        const response = await fetch(`http://localhost:5000/api/reservations/hosts`, {
+          credentials: 'include', // This sends cookies with the request
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
@@ -54,23 +45,26 @@ export default function Dashboard({ setIsAuthenticated }) {
           checkIn: res.check_in,
           checkOut: res.check_out,
           totalPrice: res.total_price,
-          host: res.host || 'Unknown Host' // Add default value
+          host: res.host || 'Unknown Host'
         }));
     
         setReservations(transformed);
         setFilteredReservations(transformed);
         setHostListings(data.listings || []);
-    
+        
       } catch (error) {
         console.error('Fetch error:', error);
         setError(error.message);
+        if (error.message.includes('401')) {
+          navigate('/login'); // Redirect if unauthorized
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchHostReservations();
-  }, []);
+    fetchHostReservations(); // Don't forget to call the function
+  }, []); // <-- This closes the first useEffect
 
   useEffect(() => {
     const filtered = reservations.filter(reservation => {
@@ -103,11 +97,10 @@ export default function Dashboard({ setIsAuthenticated }) {
 
   const handleStatusChange = async (reservationId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/reservations/${reservationId}/status`, {
         method: 'PATCH',
+        credentials: 'include', // Include cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ status: newStatus })
@@ -128,14 +121,23 @@ export default function Dashboard({ setIsAuthenticated }) {
       setError(error.message);
     }
   };
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await fetch("/auth/hosts/logout", {
+        method: "POST",
+        credentials: 'include'
+      });
+      setIsAuthenticated(false);
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   return (

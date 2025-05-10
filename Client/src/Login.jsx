@@ -18,47 +18,23 @@ export default function Login({ setIsAuthenticated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    const validationError = validateInputs();
-    
-    if (validationError) {
-      setErrorMsg(validationError);
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       const res = await fetch("http://localhost:5000/auth/hosts/login", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
+        credentials: 'include', // Important for cookies
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
-      // Handle non-JSON responses
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await res.text();
-        throw new Error(text || `HTTP error! status: ${res.status}`);
+      
+      if (res.ok) {
+        setIsAuthenticated(true);
+        navigate('/dashboard');
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Login failed');
       }
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed. Please check your credentials.");
-      }
-
-      setIsAuthenticated(true);
-      setSuccessMsg("Login successful! Redirecting...");
-      setTimeout(() => navigate("/dashboard"), 1500);
     } catch (err) {
-      console.error("Login error:", err);
-      setErrorMsg(err.message.includes("Failed to fetch") 
-        ? "Could not connect to server. Please try again later." 
-        : err.message);
-    } finally {
-      setIsSubmitting(false);
+      setErrorMsg(err.message);
     }
   };
 

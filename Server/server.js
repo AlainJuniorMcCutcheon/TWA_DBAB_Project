@@ -17,20 +17,12 @@ const app = express();
 const allowedOrigins = ['http://localhost:5173']; // Add production URL when needed
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
+  origin: 'http://localhost:5173', // Your frontend URL
+  credentials: true, // Required for cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// Apply CORS middleware
 app.use(cors(corsOptions));
 
 // Handle preflight requests

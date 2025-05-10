@@ -112,6 +112,8 @@ authRouter.post('/hosts/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        
+
         // Create JWT token
         const token = jwt.sign(
           { 
@@ -127,7 +129,7 @@ authRouter.post('/hosts/login', async (req, res) => {
         );
 
         // Set cookie with token
-        res.cookie('token', token, {  // Changed from 'token' to 'airbnb_token'
+        res.cookie('token', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
