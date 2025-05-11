@@ -12,6 +12,7 @@ export default function Register() {
   });
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const validateField = (name, value) => {
@@ -54,7 +55,13 @@ export default function Register() {
         }
     }
     
+    // Remove server error when user starts typing
+    if (newErrors.server && name !== 'server') {
+      delete newErrors.server;
+    }
+    
     setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
@@ -65,33 +72,63 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     // Validate all fields
+    let isValid = true;
     Object.entries(form).forEach(([name, value]) => {
-      validateField(name, value);
+      if (!validateField(name, value)) isValid = false;
     });
     
-    if (Object.keys(errors).length > 0) return;
-
+    if (!isValid) {
+      setIsSubmitting(false);
+      return;
+    }
+  
     try {
-      const res = await fetch("http://localhost:5000/api/hosts/register", {
+      const res = await fetch("http://localhost:5000/auth/hosts/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          hostId: form.hostId
+        }),
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        setSuccessMsg("Registration successful! Redirecting to login...");
-        setTimeout(() => navigate("/login"), 2000);
-      } else {
-        setErrors({ server: data.message || "Registration failed" });
+  
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        throw new Error(text || `HTTP error! status: ${res.status}`);
       }
+  
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || `HTTP error! status: ${res.status}`);
+      }
+  
+      setSuccessMsg("Registration successful! Redirecting to login...");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       console.error("Registration error:", err);
-      setErrors({ server: "Server error. Please try again." });
+      setErrors(prev => ({ 
+        ...prev,
+        server: err.message.includes("Failed to fetch") 
+          ? "Could not connect to server. Please try again later." 
+          : err.message 
+      }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Only disable button during submission, not after errors
+  const isFormValid = Object.keys(errors).filter(k => k !== 'server').length === 0;
 
   return (
     <div className="auth-container">
@@ -110,6 +147,7 @@ export default function Register() {
               name="email"
               value={form.email}
               onChange={handleChange}
+              onBlur={(e) => validateField('email', e.target.value)}
               required
               className={errors.email ? 'error' : ''}
             />
@@ -124,6 +162,7 @@ export default function Register() {
               name="password"
               value={form.password}
               onChange={handleChange}
+              onBlur={(e) => validateField('password', e.target.value)}
               required
               className={errors.password ? 'error' : ''}
             />
@@ -138,6 +177,7 @@ export default function Register() {
               name="confirmPassword"
               value={form.confirmPassword}
               onChange={handleChange}
+              onBlur={(e) => validateField('confirmPassword', e.target.value)}
               required
               className={errors.confirmPassword ? 'error' : ''}
             />
@@ -152,8 +192,10 @@ export default function Register() {
               name="firstName"
               value={form.firstName}
               onChange={handleChange}
+              onBlur={(e) => validateField('firstName', e.target.value)}
               required
             />
+            {errors.firstName && <span className="error-message">{errors.firstName}</span>}
           </div>
 
           <div className="form-group">
@@ -164,8 +206,10 @@ export default function Register() {
               name="lastName"
               value={form.lastName}
               onChange={handleChange}
+              onBlur={(e) => validateField('lastName', e.target.value)}
               required
             />
+            {errors.lastName && <span className="error-message">{errors.lastName}</span>}
           </div>
 
           <div className="form-group">
@@ -176,6 +220,7 @@ export default function Register() {
               name="hostId"
               value={form.hostId}
               onChange={handleChange}
+              onBlur={(e) => validateField('hostId', e.target.value)}
               required
               className={errors.hostId ? 'error' : ''}
             />
@@ -185,9 +230,9 @@ export default function Register() {
           <button 
             type="submit" 
             className="auth-button"
-            disabled={Object.keys(errors).length > 0}
+            disabled={isSubmitting || !isFormValid}
           >
-            Register
+            {isSubmitting ? 'Registering...' : 'Register'}
           </button>
         </form>
 
