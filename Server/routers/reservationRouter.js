@@ -127,26 +127,84 @@ reservationRouter.get('/hosts', authenticateToken, async (req, res) => {
 
 // Add this endpoint for status updates
 reservationRouter.patch('/:id/status', authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
   try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    console.log('Received update for ID:', id);
+    console.log('Received status update request:', { id, status, user: req.user });
+
+    // Validate status input
+    const validStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        message: `Invalid status. Must be one of: ${validStatuses.join('  , ')}`
+      });
+    }
+
+    // Validate and convert ID
+    let objectId;
+    try {
+      objectId = new ObjectId(id);
+    } catch (err) {
+      console.error('Invalid ObjectId:', err);
+      return res.status(400).json({ message: 'Invalid reservation ID format' });
+    }
+
+    // Verify the reservation exists and belongs to this host
+    const reservation = await reservationCollection.findOne({ 
+      _id: objectId,
+      $or: [
+        { hostId: req.user.hostId },
+        { listingId: { $in: await getHostListingIds(req.user.hostId) } }
+      ]
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ message: 'Reservation not found or not authorized' });
+    }
+
+    // Update reservation
     const result = await reservationCollection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: objectId },
       { $set: { status } }
     );
 
     if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: 'Reservation not found' });
+      return res.status(500).json({ message: 'Failed to update reservation' });
     }
 
-    res.json({ message: 'Reservation status updated' });
+    // Return the updated reservation
+    const updatedReservation = await reservationCollection.findOne({ _id: objectId });
+    res.json({ 
+      success: true,
+      message: 'Reservation status updated',
+      reservation: updatedReservation
+    });
+
   } catch (err) {
+    console.error('Status update error:', err);
     res.status(500).json({ 
-      message: 'Error updating reservation status', 
-      error: err.message 
+      message: 'Internal server error',
+      error: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 });
+
+// Helper function to get host's listing IDs
+async function getHostListingIds(hostId) {
+  const db = client.db(DB_NAME);
+  const listings = await db.collection('Listings')
+    .find({ 
+      $or: [
+        { hostId: hostId },
+        { 'host.host_id': hostId }
+      ]
+    })
+    .project({ _id: 1 })
+    .toArray();
+  return listings.map(l => l._id);
+}
 
 export default reservationRouter;

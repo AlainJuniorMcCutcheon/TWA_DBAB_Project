@@ -12,13 +12,10 @@ dotenv.config();
 // Initialize the app
 const app = express();
 
-// Configure CORS properly
-const allowedOrigins = ['http://localhost:5173']; // Add production URL when needed
-
 const corsOptions = {
   origin: 'http://localhost:5173',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 };
 
@@ -34,11 +31,6 @@ app.use(express.json());
 
 // Routes
 app.use('/auth', authRouter);
-
-// Protected host route example
-app.get('/api/hosts/dashboard', authenticateHost, (req, res) => {
-  res.json({ message: 'Welcome to your dashboard' });
-});
 
 app.use('/reservations', reservationRouter);
 
