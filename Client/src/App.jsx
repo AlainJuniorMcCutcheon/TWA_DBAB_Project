@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Login from './Login.jsx';
 import Register from './Register.jsx';
 import Dashboard from './dashboard.jsx';
+import Logout from './Logout.jsx';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,6 +17,7 @@ function App() {
           path="/dashboard" 
           element={isAuthenticated ? <Dashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" replace />} 
         />
+        <Route path="/logout" element={<Logout setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
