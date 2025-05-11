@@ -81,16 +81,21 @@ class DatabaseLayer:
     def get_filtered_listings(self, city=None, max_price=None):
         try:
             query = {}
+
+            # Validate and add city to query
             if city:
-                query["location"] = {"$regex": f"^{city}$", "$options": "i"}
+                city = city.strip().lower()
+                query["address.market"] = {"$regex": f"^{city}$", "$options": "i"}
+
+            # Validate and add max_price to query
             if max_price:
                 try:
-                    max_price = int(max_price)
-                    query["price"] = {"$lte": max_price}
+                    max_price = float(max_price)
+                    query["price"] = {"$lte": Decimal128(str(max_price))}
                 except ValueError:
                     return {"success": False, "message": "Max price must be a number."}
 
-            listings = list(self.db.Listings.find(query, {"_id": 0}))
+            listings = list(self.db.Listings.find(query, {"_id": 0}).limit(50))
             return {"success": True, "listings": listings}
         except Exception as e:
             return {"success": False, "message": f"Error fetching listings: {str(e)}"}
