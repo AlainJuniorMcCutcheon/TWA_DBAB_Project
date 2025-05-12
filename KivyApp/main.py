@@ -143,6 +143,46 @@ class BnbApp(App):
         elif isinstance(value, Decimal):
             return float(value)
         return float(value)
+    
+    def confirm_reservation(self):
+        if not self.current_user:
+            print("No user is logged in.")
+            return
+
+        reservation_screen = self.root.get_screen('reservation')
+        listing = getattr(reservation_screen, 'listing', None)
+
+        if not listing:
+            print("No listing selected.")
+            return
+
+        # Replace with real form inputs in your Kivy screen
+        check_in = "2025-04-20"
+        check_out = "2025-04-22"
+        guests = 2
+
+        reservation = {
+            "host": listing.get("host_name", "Unknown Host"),
+            "hostid": listing.get("host_id"),
+            "guest": f"{self.current_user['first_name']} {self.current_user['last_name']}",
+            "listing_id": str(listing.get("_id")),
+            "listing_title": listing.get("name", "Unknown Listing"),
+            "check_in": check_in,
+            "check_out": check_out,
+            "guests": guests,
+            "total_price": listing.get("price", 0),
+            "status": "PENDING"
+        }
+
+        from db_layer import add_reservation  # Make sure this method exists
+        result = add_reservation(reservation)
+
+        if result.get("success"):
+            print("Reservation confirmed.")
+            self.root.current = "search"
+        else:
+            print("Failed to confirm reservation:", result.get("message"))
+
 
 if __name__ == '__main__':
     BnbApp().run()
