@@ -95,44 +95,42 @@ class BnbApp(App):
 
     def show_listings(self):
         screen = self.root.get_screen('search')
-        rv = screen.ids.listings_rv
+        listings_box = screen.ids.listings_box
+        listings_box.clear_widgets()
 
-        city = screen.ids.city.text.strip().lower()
+        city = screen.ids.city.text.strip()
         max_price_text = screen.ids.max_price.text.strip()
-        max_price = int(max_price_text) if max_price_text.isdigit() else float('inf')
+        max_price = None
 
-        result = db_layer.get_filtered_listings()
+        if max_price_text:
+            try:
+                max_price = float(max_price_text)
+            except ValueError:
+                listings_box.add_widget(Label(text="Max price must be a valid number."))
+                return
+
+        result = db_layer.get_filtered_listings(city=city, max_price=max_price)
         if result.get('success'):
-            listings = result['listings']
-            filtered = []
+            listings = result['listings'][:50]  # Limit to first 50
+
+            if not listings:
+                listings_box.add_widget(Label(text="No listings match your search."))
+                return
 
             for l in listings:
                 price = self.convert_decimal128_to_float(l.get('price', 0))
-                if city and city not in l.get('address', {}).get('market', '').lower():
-                    continue
-                if price is not None and price > max_price:
-                    continue
+                text = f"[b]{l.get('name', 'Untitled')}[/b]\nLocation: {l.get('address', {}).get('market', 'N/A')}\nPrice: ${price}/night"
+                box = BoxLayout(orientation='horizontal', size_hint_y=None, height=120)
 
-                filtered.append({
-                    'image_source': l.get('images', {}).get('picture_url', 'default.jpg'),
-                    'listing_text': f"[b]{l.get('name', 'Untitled')}[/b]\nLocation: {l.get('address', {}).get('market', 'N/A')}\nPrice: ${price}/night",
-                    'listing_data': l
-                })
+                image = AsyncImage(source=l.get('images', {}).get('picture_url', 'default.jpg'), size_hint=(0.4, 1))
+                label = Label(text=text, markup=True, halign="left", valign="top")
+                label.bind(size=label.setter('text_size'))
 
-            if not filtered:
-                filtered.append({
-                    'image_source': 'default.jpg',
-                    'listing_text': "No listings match your search.",
-                    'listing_data': {}
-                })
-
-            rv.data = filtered
+                box.add_widget(image)
+                box.add_widget(label)
+                listings_box.add_widget(box)
         else:
-            rv.data = [{
-                'image_source': 'default.jpg',
-                'listing_text': "Error loading listings.",
-                'listing_data': {}
-            }]
+            listings_box.add_widget(Label(text="Error loading listings."))
 
     def check_availability(self, listing):
         reservation_screen = self.root.get_screen('reservation')

@@ -164,16 +164,13 @@
                 size_hint_x: None
                 width: 100
                 on_press: app.show_listings()
+        ScrollView:
+            do_scroll_x: False
+            do_scroll_y: True
 
-        RecycleView:
-            id: listings_rv
-            viewclass: 'ListingItem'
-            size_hint_y: 1
-            RecycleBoxLayout:
+            BoxLayout:
+                id: listings_box
                 orientation: 'vertical'
-                spacing: 10
-                default_size: None, 120
-                default_size_hint: 1, None
                 size_hint_y: None
                 height: self.minimum_height
                 
