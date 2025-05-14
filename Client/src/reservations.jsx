@@ -77,7 +77,14 @@ export default function Reservations({
                 <p><strong>Check-out:</strong> {new Date(reservation.checkOut).toLocaleDateString()}</p>
                 <p><strong>Guests:</strong> {reservation.guests}</p>
                 <p><strong>Total Price:</strong> ${reservation.totalPrice.toFixed(2)}</p>
-                <p><strong>Status:</strong> {reservation.status}</p>
+                
+                {/* Status with dynamic styling */}
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span className={`status ${reservation.status}`}>
+                    {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1).toLowerCase()}
+                  </span>
+                </p>
               </div>
               
               {reservation.status === 'PENDING' && (

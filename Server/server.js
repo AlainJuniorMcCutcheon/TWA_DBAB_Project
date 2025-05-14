@@ -35,10 +35,7 @@ app.use('/auth', authRouter);
 app.use('/reservations', reservationRouter);
 
 // Connect to MongoDB using Mongoose
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(process.env.MONGO_URI)
 .then(() => {
   console.log("Connected to MongoDB via Mongoose.");
   app.listen(process.env.PORT || 5000, () => {
