@@ -108,7 +108,7 @@ class DatabaseLayer:
             if not listing or not guest_id:
                 return {'success': False, 'message': 'Invalid reservation data'}
 
-            host_id = listing.get('host_id')
+            host_id = listing.get('host', [{}]).get('host_id')
             if not host_id:
                 return {'success': False, 'message': 'Host ID not found for listing'}
 

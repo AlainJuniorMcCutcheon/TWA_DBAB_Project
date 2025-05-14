@@ -134,8 +134,11 @@ class BnbApp(App):
                 )
 
                 listing_text = f"[b]{listing.get('name', 'Untitled')}[/b]\nLocation: {listing.get('address', {}).get('market', 'N/A')}\nPrice: ${self.convert_decimal128_to_float(listing.get('price', 0))}/night"
+               # host_text = f"{listing.get('host_id', 'Untitled')}"
                 label = Label(text=listing_text, markup=True, halign="left", valign="middle")
                 label.bind(size=label.setter('text_size'))
+              #  host = Label(text=host_text, markup=True, halign="left", valign="middle")
+               # host.bind(size=host.setter('text_size'))
 
                 check_button = Button(
                     text="Check Availability",
@@ -151,15 +154,16 @@ class BnbApp(App):
                 row.add_widget(image)
                 row.add_widget(label)
                 row.add_widget(check_button)
+                #row.add_widget(host)
                 listings_box.add_widget(row)
 
         else:
             listings_box.add_widget(Label(text="Error loading listings."))
 
-    def check_availability(self, listing):
-        reservation_screen = self.root.get_screen('reservation')
-        reservation_screen.display_listing_details(listing)
-        self.root.current = 'reservation'
+    # def check_availability(self, listing):
+    #     reservation_screen = self.root.get_screen('reservation')
+    #     reservation_screen.display_listing_details(listing)
+    #     self.root.current = 'reservation'
 
     def convert_decimal128_to_float(self, value):
         if isinstance(value, Decimal128):
@@ -181,6 +185,7 @@ class BnbApp(App):
         reservation_screen = self.root.get_screen('reservation')
         listing = reservation_screen.listing
         guest_id = self.current_user['user_id']
+        #host_id = listing
 
         result = db_layer.create_reservation(guest_id, listing)
         reservation_screen.ids.reservation_result.text = result.get('message')
