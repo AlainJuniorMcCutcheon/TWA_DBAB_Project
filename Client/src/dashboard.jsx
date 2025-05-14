@@ -24,9 +24,9 @@ export default function Dashboard({ setIsAuthenticated }) {
         const response = await fetch(`http://localhost:5000/reservations/hosts`, {
           credentials: 'include'
         });
-        
+
         const data = await response.json();
-        
+
         if (!data.reservations) throw new Error('Invalid response format');
 
         const transformed = data.reservations.map(res => ({
@@ -57,28 +57,19 @@ export default function Dashboard({ setIsAuthenticated }) {
 
   useEffect(() => {
     const filtered = reservations.filter(reservation => {
-      if (filters.status !== 'All' && reservation.status !== filters.status) {
-        return false;
-      }
-      
-      if (filters.listingTitle !== 'All Listings' && 
-          reservation.listingTitle !== filters.listingTitle) {
-        return false;
-      }
-      
-      if (filters.startDate || filters.endDate) {
-        const checkInDate = new Date(reservation.checkIn);
-        const startDate = filters.startDate ? new Date(filters.startDate) : null;
-        const endDate = filters.endDate ? new Date(filters.endDate) : null;
-        
-        if (startDate && !endDate && checkInDate < startDate) return false;
-        if (!startDate && endDate && checkInDate > endDate) return false;
-        if (startDate && endDate && (checkInDate < startDate || checkInDate > endDate)) return false;
-      }
-      
+      if (filters.status !== 'All' && reservation.status !== filters.status) return false;
+      if (filters.listingTitle !== 'All Listings' && reservation.listingTitle !== filters.listingTitle) return false;
+
+      const checkInDate = new Date(reservation.checkIn);
+      const startDate = filters.startDate ? new Date(filters.startDate) : null;
+      const endDate = filters.endDate ? new Date(filters.endDate) : null;
+
+      if (startDate && checkInDate < startDate) return false;
+      if (endDate && checkInDate > endDate) return false;
+
       return true;
     });
-    
+
     setFilteredReservations(filtered);
   }, [filters, reservations]);
 
@@ -94,22 +85,15 @@ export default function Dashboard({ setIsAuthenticated }) {
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to update reservation status');
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to update reservation status');
-      }
-
-      setReservations(prev => 
-        prev.map(res => 
+      setReservations(prev =>
+        prev.map(res =>
           res._id === reservationId ? { ...res, status: newStatus } : res
         )
       );
     } catch (error) {
-      console.error('Error updating reservation:', {
-        error: error.message,
-        reservationId,
-        status: newStatus
-      });
+      console.error('Error updating reservation:', error);
       setError(`Failed to update reservation: ${error.message}`);
     }
   };
@@ -132,10 +116,7 @@ export default function Dashboard({ setIsAuthenticated }) {
     }
   };
 
-  // Get unique listing titles from all reservations
-  const uniqueListingTitles = [...new Set(
-    reservations.map(res => res.listingTitle)
-  )].sort((a, b) => a.localeCompare(b));
+  const uniqueListingTitles = [...new Set(reservations.map(res => res.listingTitle))].sort();
 
   return (
     <div className="dashboard-container">
@@ -144,10 +125,8 @@ export default function Dashboard({ setIsAuthenticated }) {
         <button onClick={handleLogout} className="logout-button">Sign Out</button>
       </div>
 
-      {/* Calendar Component - Empty for now */}
-      <Calendar />
+      <Calendar reservations={filteredReservations} />
 
-      {/* Reservations Component */}
       <Reservations 
         filteredReservations={filteredReservations}
         filters={filters}

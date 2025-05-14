@@ -249,3 +249,36 @@ h2 {
 h3 {
   margin-top: 0;
 }
+
+.status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: capitalize;
+  text-align: center;
+  min-width: 100px;
+}
+
+/* Individual status styles */
+.status.PENDING {
+  background-color: #ff9800;
+  color: white;
+}
+
+.status.CONFIRMED {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.status.COMPLETED {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status.CANCELLED {
+  background-color: #f44336;
+  color: white;
+}
+
