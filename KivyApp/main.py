@@ -98,37 +98,61 @@ class BnbApp(App):
         listings_box = screen.ids.listings_box
         listings_box.clear_widgets()
 
-        city = screen.ids.city.text.strip()
+        city = screen.ids.city.text.strip().lower()
         max_price_text = screen.ids.max_price.text.strip()
-        max_price = None
+        max_price = int(max_price_text) if max_price_text.isdigit() else float('inf')
 
-        if max_price_text:
-            try:
-                max_price = float(max_price_text)
-            except ValueError:
-                listings_box.add_widget(Label(text="Max price must be a valid number."))
-                return
-
-        result = db_layer.get_filtered_listings(city=city, max_price=max_price)
+        result = db_layer.get_filtered_listings()
         if result.get('success'):
-            listings = result['listings'][:50]  # Limit to first 50
-
-            if not listings:
-                listings_box.add_widget(Label(text="No listings match your search."))
-                return
+            listings = result['listings']
+            filtered = []
 
             for l in listings:
                 price = self.convert_decimal128_to_float(l.get('price', 0))
-                text = f"[b]{l.get('name', 'Untitled')}[/b]\nLocation: {l.get('address', {}).get('market', 'N/A')}\nPrice: ${price}/night"
-                box = BoxLayout(orientation='horizontal', size_hint_y=None, height=120)
 
-                image = AsyncImage(source=l.get('images', {}).get('picture_url', 'default.jpg'), size_hint=(0.4, 1))
-                label = Label(text=text, markup=True, halign="left", valign="top")
+                if city and city not in l.get('address', {}).get('market', '').lower():
+                    continue
+                if price is not None and price > max_price:
+                    continue
+
+                filtered.append(l)
+
+            if not filtered:
+                listings_box.add_widget(Label(text="No listings match your search."))
+                return
+
+            for listing in filtered:
+                row = BoxLayout(orientation='horizontal', size_hint_y=None, height=120, spacing=10)
+
+                # Extract the picture URL
+                picture_url = listing.get('images', [{}]).get('picture_url')
+
+                image = AsyncImage(
+                    source=picture_url if picture_url else 'default.jpg',
+                    size_hint_x=None,
+                    width=100
+                )
+
+                listing_text = f"[b]{listing.get('name', 'Untitled')}[/b]\nLocation: {listing.get('address', {}).get('market', 'N/A')}\nPrice: ${self.convert_decimal128_to_float(listing.get('price', 0))}/night"
+                label = Label(text=listing_text, markup=True, halign="left", valign="middle")
                 label.bind(size=label.setter('text_size'))
 
-                box.add_widget(image)
-                box.add_widget(label)
-                listings_box.add_widget(box)
+                check_button = Button(
+                    text="Check Availability",
+                    size_hint_x=None,
+                    width=160
+                )
+                
+                # Bind button click to the check_availability method and pass the listing
+
+                
+                check_button.bind(on_press=lambda instance, l=listing: self.check_availability(l))
+
+                row.add_widget(image)
+                row.add_widget(label)
+                row.add_widget(check_button)
+                listings_box.add_widget(row)
+
         else:
             listings_box.add_widget(Label(text="Error loading listings."))
 
@@ -144,44 +168,22 @@ class BnbApp(App):
             return float(value)
         return float(value)
     
-    def confirm_reservation(self):
+    def check_availability(self, listing):
+        reservation_screen = self.root.get_screen('reservation')
+        reservation_screen.display_listing_details(listing)
+        reservation_screen.listing = listing
+        self.root.current = 'reservation'
+
+    def reserve_listing(self):
         if not self.current_user:
-            print("No user is logged in.")
             return
 
         reservation_screen = self.root.get_screen('reservation')
-        listing = getattr(reservation_screen, 'listing', None)
+        listing = reservation_screen.listing
+        guest_id = self.current_user['user_id']
 
-        if not listing:
-            print("No listing selected.")
-            return
-
-        # Replace with real form inputs in your Kivy screen
-        check_in = "2025-04-20"
-        check_out = "2025-04-22"
-        guests = 2
-
-        reservation = {
-            "host": listing.get("host_name", "Unknown Host"),
-            "hostid": listing.get("host_id"),
-            "guest": f"{self.current_user['first_name']} {self.current_user['last_name']}",
-            "listing_id": str(listing.get("_id")),
-            "listing_title": listing.get("name", "Unknown Listing"),
-            "check_in": check_in,
-            "check_out": check_out,
-            "guests": guests,
-            "total_price": listing.get("price", 0),
-            "status": "PENDING"
-        }
-
-        from db_layer import add_reservation  # Make sure this method exists
-        result = add_reservation(reservation)
-
-        if result.get("success"):
-            print("Reservation confirmed.")
-            self.root.current = "search"
-        else:
-            print("Failed to confirm reservation:", result.get("message"))
+        result = db_layer.create_reservation(guest_id, listing)
+        reservation_screen.ids.reservation_result.text = result.get('message')
 
 
 if __name__ == '__main__':

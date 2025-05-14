@@ -7,6 +7,9 @@ from bson.decimal128 import Decimal128
 from pymongo import MongoClient
 import certifi
 
+from datetime import datetime
+from bson import ObjectId
+
 logging.getLogger("pymongo").setLevel(logging.WARNING)
 
 # Load environment variables from .env file
@@ -99,6 +102,28 @@ class DatabaseLayer:
             return {"success": True, "listings": listings}
         except Exception as e:
             return {"success": False, "message": f"Error fetching listings: {str(e)}"}
+        
+    def create_reservation(self, guest_id, listing):
+        try:
+            if not listing or not guest_id:
+                return {'success': False, 'message': 'Invalid reservation data'}
+
+            host_id = listing.get('host_id')
+            if not host_id:
+                return {'success': False, 'message': 'Host ID not found for listing'}
+
+            reservation = {
+                'listing_id': listing.get('id', str(ObjectId())),
+                'guest_id': guest_id,
+                'host_id': host_id,
+                'status': 'Pending',
+                'timestamp': datetime.utcnow()
+            }
+
+            self.db.Reservations.insert_one(reservation)
+            return {'success': True, 'message': 'Reservation created successfully'}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
 
 
 # Instantiate the database layer
