@@ -124,7 +124,28 @@ class DatabaseLayer:
             return {'success': True, 'message': 'Reservation created successfully'}
         except Exception as e:
             return {'success': False, 'message': str(e)}
+        
+    def get_reservations(self, guest_id):
+        try:
+            query = {guest_id: str(guest_id)}
 
+            # Validate and add city to query
+            # if city:
+            #     city = city.strip().lower()
+            #     query["address.market"] = {"$regex": f"^{city}$", "$options": "i"}
+
+            # # Validate and add max_price to query
+            # if max_price:
+            #     try:
+            #         max_price = float(max_price)
+            #         query["price"] = {"$lte": Decimal128(str(max_price))}
+            #     except ValueError:
+            #         return {"success": False, "message": "Max price must be a number."}
+
+            listings = list(self.db.Reservations.find(query, {"_id": 0}).limit(50))
+            return {"success": True, "listings": listings}
+        except Exception as e:
+            return {"success": False, "message": f"Error fetching listings: {str(e)}"}
 
 # Instantiate the database layer
 db_layer = DatabaseLayer()

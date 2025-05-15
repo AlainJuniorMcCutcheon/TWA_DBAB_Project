@@ -23,6 +23,16 @@ class RegisterScreen(Screen):
 class SearchScreen(Screen):
     pass
 
+class ViewReservationScreen(Screen):
+    # def display_reservation(self, reservation):
+    #     self.ids.reservation_listing_name.text = f"Listing: {reservation.get('listing_name', 'N/A')}"
+    #     self.ids.reservation_dates.text = f"Check-in: {reservation.get('check_in', 'N/A')} - Check-out: {reservation.get('check_out', 'N/A')}"
+    #     self.ids.reservation_guests.text = f"Guests: {reservation.get('guests', 'N/A')}"
+    #     self.ids.reservation_status.text = f"Status: {reservation.get('status', 'Pending')}"
+
+    #     self.reservation = reservation  # Store for cancellation reference
+    pass
+
 class ReservationScreen(Screen):
     def display_listing_details(self, listing):
         self.ids.listing_name.text = f"Listing Name: {listing.get('name', 'N/A')}"
@@ -52,6 +62,7 @@ class BnbApp(App):
         self.sm.add_widget(RegisterScreen(name='register'))
         self.sm.add_widget(SearchScreen(name='search'))
         self.sm.add_widget(ReservationScreen(name='reservation'))
+        self.sm.add_widget(ViewReservationScreen(name='viewreservation'))
         return self.sm
 
     def logout_guest(self):
@@ -60,6 +71,10 @@ class BnbApp(App):
         
         # Navigate back to the LoginScreen
         self.root.current = 'login'
+
+    def view_reserve(self):
+
+        self.root.current = 'viewreservation'
 
     def register_guest(self):
         screen = self.root.get_screen('register')
@@ -190,6 +205,76 @@ class BnbApp(App):
         result = db_layer.create_reservation(guest_id, listing)
         reservation_screen.ids.reservation_result.text = result.get('message')
 
+    def cancel_reservation(self):
+        print("cancelled")
+
+    def show_reservations(self):
+            screen = self.root.get_screen('viewreservations')
+            listings_box = screen.ids.listings_box
+            listings_box.clear_widgets()
+            guest_id = self.current_user['user_id']
+
+            # city = screen.ids.city.text.strip().lower()
+            # max_price_text = screen.ids.max_price.text.strip()
+            # max_price = int(max_price_text) if max_price_text.isdigit() else float('inf')
+
+            result = db_layer.get_reservations(guest_id)
+            if result.get('success'):
+                listings = result['listings']
+                filtered = []
+
+                for l in listings:
+                    price = self.convert_decimal128_to_float(l.get('price', 0))
+
+                    if city and city not in l.get('address', {}).get('market', '').lower():
+                        continue
+                    if price is not None and price > max_price:
+                        continue
+
+                    filtered.append(l)
+
+                if not filtered:
+                    listings_box.add_widget(Label(text="No listings match your search."))
+                    return
+
+                for listing in filtered:
+                    row = BoxLayout(orientation='horizontal', size_hint_y=None, height=120, spacing=10)
+
+                    # Extract the picture URL
+                    picture_url = listing.get('images', [{}]).get('picture_url')
+
+                    image = AsyncImage(
+                        source=picture_url if picture_url else 'default.jpg',
+                        size_hint_x=None,
+                        width=100
+                    )
+
+                    listing_text = f"[b]{listing.get('name', 'Untitled')}[/b]\nLocation: {listing.get('address', {}).get('market', 'N/A')}\nPrice: ${self.convert_decimal128_to_float(listing.get('price', 0))}/night"
+                # host_text = f"{listing.get('host_id', 'Untitled')}"
+                    label = Label(text=listing_text, markup=True, halign="left", valign="middle")
+                    label.bind(size=label.setter('text_size'))
+                #  host = Label(text=host_text, markup=True, halign="left", valign="middle")
+                # host.bind(size=host.setter('text_size'))
+
+                    check_button = Button(
+                        text="Check Availability",
+                        size_hint_x=None,
+                        width=160
+                    )
+                    
+                    # Bind button click to the check_availability method and pass the listing
+
+                    
+                    check_button.bind(on_press=lambda instance, l=listing: self.check_availability(l))
+
+                    row.add_widget(image)
+                    row.add_widget(label)
+                    row.add_widget(check_button)
+                    #row.add_widget(host)
+                    listings_box.add_widget(row)
+
+            else:
+                listings_box.add_widget(Label(text="Error loading listings."))
 
 if __name__ == '__main__':
     BnbApp().run()
