@@ -36,28 +36,64 @@ reservationRouter.get('/listing/:listingId', authenticateToken, async (req, res)
     res.status(500).json({ message: 'Error fetching reservations', error: err.message });
   }
 });
-
-// Create a new reservation
 reservationRouter.post('/', authenticateToken, async (req, res) => {
-  const { listingId, guestName, checkIn, checkOut } = req.body;
+  const { 
+    hostId,
+    host,
+    guest,
+    listingId,
+    listing_title,
+    check_in,
+    check_out,
+    guests,
+    total_price,
+    status = 'PENDING' // Default status if not provided
+  } = req.body;
 
-  if (!listingId || !guestName || !checkIn || !checkOut) {
-    return res.status(400).json({ message: 'Listing ID, guest name, check-in and check-out dates are required' });
+  // Validate required fields
+  if (!hostId || !host || !guest || !listingId || !listing_title || !check_in || !check_out || !guests || !total_price) {
+    return res.status(400).json({ 
+      message: 'All fields are required: hostId, host, guest, listingId, listing_title, check_in, check_out, guests, total_price' 
+    });
+  }
+
+  // Validate dates
+  if (new Date(check_out) <= new Date(check_in)) {
+    return res.status(400).json({ 
+      message: 'Check-out date must be after check-in date' 
+    });
   }
 
   const newReservation = {
+    hostId,
+    host,
+    guest,
     listingId,
-    guestName,
-    checkIn,
-    checkOut,
-    createdAt: new Date(),
+    listing_title,
+    check_in,
+    check_out,
+    guests: Number(guests),
+    total_price: Number(total_price),
+    status,
   };
 
   try {
-    const result = await reservationCollection.insertOne(newReservation); // Insert new reservation into Reservation collection
-    res.status(201).json({ message: 'Reservation created', id: result.insertedId });
+    const result = await reservationCollection.insertOne(newReservation);
+    
+    // Return the created reservation in the desired format
+    res.status(201).json({
+      message: 'Reservation created successfully',
+      reservation: {
+        ...newReservation,
+        _id: result.insertedId
+      }
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Error creating reservation', error: err.message });
+    console.error('Error creating reservation:', err);
+    res.status(500).json({ 
+      message: 'Error creating reservation',
+      error: err.message 
+    });
   }
 });
 
