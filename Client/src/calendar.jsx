@@ -30,10 +30,6 @@ const Calendar = ({ reservations }) => {
 
   const fallbackEvents = [
     {
-      title: "Test Event",
-      start: new Date(2025, 4, 15),
-      end: new Date(2025, 4, 17),
-      allDay: true,
     },
   ];
 

@@ -41,7 +41,6 @@ reservationRouter.post('/', authenticateToken, async (req, res) => {
     hostId,
     host,
     guest,
-    listingId,
     listing_title,
     check_in,
     check_out,
@@ -51,7 +50,7 @@ reservationRouter.post('/', authenticateToken, async (req, res) => {
   } = req.body;
 
   // Validate required fields
-  if (!hostId || !host || !guest || !listingId || !listing_title || !check_in || !check_out || !guests || !total_price) {
+  if (!hostId || !host || !guest || !listing_title || !check_in || !check_out || !guests || !total_price) {
     return res.status(400).json({ 
       message: 'All fields are required: hostId, host, guest, listingId, listing_title, check_in, check_out, guests, total_price' 
     });
@@ -68,7 +67,6 @@ reservationRouter.post('/', authenticateToken, async (req, res) => {
     hostId,
     host,
     guest,
-    listingId,
     listing_title,
     check_in,
     check_out,
@@ -166,9 +164,6 @@ reservationRouter.patch('/:id/status', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-
-    console.log('Received update for ID:', id);
-    console.log('Received status update request:', { id, status, user: req.user });
 
     // Validate status input
     const validStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];

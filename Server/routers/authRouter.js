@@ -67,8 +67,8 @@ authRouter.post('/hosts/register', async (req, res) => {
         const newHost = {
             email,
             password: hashedPassword,
-            first_Name,
-            last_Name,
+            firstName,
+            lastName,
             role: "host",
             hostId,
         };
