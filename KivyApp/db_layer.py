@@ -148,6 +148,7 @@ class DatabaseLayer:
                 'guest_id': guest_id,
                 'listing_id': listing_id,
                 'listing_title': listing.get('name', ''),
+                'city': listing.get('address', {}).get('market', 'N/A'),
                 'check_in': check_in,
                 'check_out': check_out,
                 'guests': int(guests),

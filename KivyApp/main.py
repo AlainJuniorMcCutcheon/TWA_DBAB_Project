@@ -159,6 +159,11 @@ class BnbApp(App):
     def logout_guest(self):
         # Clear the current user session
         self.current_user = None
+
+        # Clear login screen fields
+        login_screen = self.root.get_screen('login')
+        login_screen.ids.email.text = ""
+        login_screen.ids.password.text = ""
         
         # Navigate back to the LoginScreen
         self.root.current = 'login'
