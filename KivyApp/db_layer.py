@@ -7,6 +7,8 @@ from bson.decimal128 import Decimal128
 from pymongo import MongoClient
 import certifi
 
+from bson.objectid import ObjectId
+
 logging.getLogger("pymongo").setLevel(logging.WARNING)
 
 # Load environment variables from .env file
@@ -95,8 +97,8 @@ class DatabaseLayer:
                 except ValueError:
                     return {"success": False, "message": "Max price must be a number."}
 
-            # Base MongoDB query
-            cursor = self.db.Listings.find(query, {"_id": 0})
+            # Base MongoDB query - removed {"_id": 0} to include the id
+            cursor = self.db.Listings.find(query)
 
             # Apply limit only if at least one filter is used
             if query:
@@ -106,6 +108,72 @@ class DatabaseLayer:
             return {"success": True, "listings": listings}
         except Exception as e:
             return {"success": False, "message": f"Error fetching listings: {str(e)}"}
+        
+
+        # Add this method to the DatabaseLayer class in db_layer.py
+    def create_reservation(self, guest_id, listing_id, check_in, check_out, guests, guest_name):
+        try:
+            # Get user and listing details
+            user = self.db.Users.find_one({'_id': ObjectId(guest_id)})
+            listing = self.db.Listings.find_one({'_id': listing_id})
+            
+            if not user or not listing:
+                return {'success': False, 'message': 'Invalid user or listing'}
+            
+            # Convert string dates to date objects for comparison
+            from datetime import datetime
+            try:
+                check_in_date = datetime.strptime(check_in, '%Y-%m-%d').date()
+                check_out_date = datetime.strptime(check_out, '%Y-%m-%d').date()
+            except ValueError:
+                return {'success': False, 'message': 'Invalid date format. Use YYYY-MM-DD'}
+            
+            # Validation checks
+            if check_out_date <= check_in_date:
+                return {'success': False, 'message': 'Check-out date must be after check-in date'}
+            
+            if int(guests) > listing.get('accommodates', 1):
+                return {'success': False, 'message': f'Number of guests exceeds maximum ({listing.get("accommodates", 1)})'}
+            
+            # Calculate total price
+            nights = (check_out_date - check_in_date).days
+            price_per_night = self.convert_decimal128_to_float(listing.get('price', 0))
+            total_price = nights * price_per_night
+            
+            # Create reservation document
+            reservation = {
+                'hostId': listing.get('host', {}).get('host_id', ''),
+                'host': listing.get('host', {}).get('host_name', 'Host'),
+                'guest': f"{user['first_name']} {user['last_name']}",
+                'guest_id': guest_id,
+                'listing_id': listing_id,
+                'listing_title': listing.get('name', ''),
+                'check_in': check_in,
+                'check_out': check_out,
+                'guests': int(guests),
+                'total_price': total_price,
+                'status': 'PENDING'  # Initial status
+            }
+            
+            # Insert reservation
+            result = self.db.Reservations.insert_one(reservation)
+            
+            # Add reservation reference to user
+            self.db.Users.update_one(
+                {'_id': ObjectId(guest_id)},
+                {'$push': {'reservations': result.inserted_id}}
+            )
+            
+            return {'success': True, 'message': 'Reservation request submitted successfully'}
+        
+        except Exception as e:
+            return {'success': False, 'message': f'Reservation error: {str(e)}'}
+
+    # Also add this helper method to the class
+    def convert_decimal128_to_float(self, value):
+        if isinstance(value, Decimal128):
+            return float(value.to_decimal())
+        return float(value)
 
 
 

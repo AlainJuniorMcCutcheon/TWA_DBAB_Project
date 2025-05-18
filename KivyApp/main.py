@@ -34,17 +34,30 @@ class ViewReservationScreen(Screen):
     pass
 
 class ReservationScreen(Screen):
-    def display_listing_details(self, listing):
+    def display_listing_details(self, listing, app):
         self.ids.listing_name.text = f"Listing Name: {listing.get('name', 'N/A')}"
-        self.ids.listing_price.text = f"Price: ${listing.get('price', 0)}/night"
-
-        # Correct way to extract picture_url
-        picture_url = listing.get('images', [{}]).get('picture_url')
-        if picture_url:
-            self.ids.listing_image.source = picture_url
-        else:
-            self.ids.listing_image.source = 'default.jpg'  # fallback image
-
+        self.ids.listing_price.text = f"Price: ${app.convert_decimal128_to_float(listing.get('price', 0))}/night"
+        
+        # Clear previous inputs and results
+        self.ids.check_in.text = ""
+        self.ids.check_out.text = ""
+        self.ids.guests.text = ""
+        self.ids.reservation_result.text = ""
+        
+        # Set default guests to 1
+        self.ids.guests.text = "1"
+        
+        # Set image with error handling
+        picture_url = listing.get('images', {}).get('picture_url')
+        try:
+            if picture_url:
+                self.ids.listing_image.source = picture_url
+                self.ids.listing_image.reload()
+            else:
+                self.ids.listing_image.source = ''
+        except:
+            self.ids.listing_image.source = ''
+        
         self.listing = listing
 
 class MyScreenManager(ScreenManager):
@@ -181,24 +194,62 @@ class BnbApp(App):
         elif isinstance(value, Decimal):
             return float(value)
         return float(value)
-    
+
+    # Update the check_availability method to use app's method
     def check_availability(self, listing):
         reservation_screen = self.root.get_screen('reservation')
-        reservation_screen.display_listing_details(listing)
+        reservation_screen.display_listing_details(listing, self)
         reservation_screen.listing = listing
         self.root.current = 'reservation'
 
     def reserve_listing(self):
         if not self.current_user:
-            return
+            return {'success': False, 'message': 'Not logged in'}
 
         reservation_screen = self.root.get_screen('reservation')
         listing = reservation_screen.listing
         guest_id = self.current_user['user_id']
-        #host_id = listing
-
-        result = db_layer.create_reservation(guest_id, listing)
-        reservation_screen.ids.reservation_result.text = result.get('message')
+        
+        # Check if listing has an _id
+        if '_id' not in listing:
+            reservation_screen.ids.reservation_result.text = "Error: Listing information incomplete"
+            reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)
+            return
+        
+        # Get input values
+        check_in = reservation_screen.ids.check_in.text.strip()
+        check_out = reservation_screen.ids.check_out.text.strip()
+        guests = reservation_screen.ids.guests.text.strip()
+        
+        # Basic validation
+        if not all([check_in, check_out, guests]):
+            reservation_screen.ids.reservation_result.text = "All fields are required"
+            reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)
+            return
+        
+        if not guests.isdigit():
+            reservation_screen.ids.reservation_result.text = "Number of guests must be a whole number"
+            reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)
+            return
+        
+        # Create reservation
+        result = db_layer.create_reservation(
+            guest_id=guest_id,
+            listing_id=listing['_id'],
+            check_in=check_in,
+            check_out=check_out,
+            guests=guests,
+            guest_name=f"{self.current_user['first_name']} {self.current_user.get('last_name', '')}"
+        )
+        
+        # Show result
+        if result.get('success'):
+            reservation_screen.ids.reservation_result.text = result['message']
+            reservation_screen.ids.reservation_result.color = (0, 1, 0, 1)
+            self.root.current == 'search'
+        else:
+            reservation_screen.ids.reservation_result.text = result['message']
+            reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)
 
     def cancel_reservation(self):
         print("cancelled")
