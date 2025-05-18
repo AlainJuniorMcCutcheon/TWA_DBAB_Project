@@ -132,6 +132,8 @@ class BnbApp(App):
 
                 filtered.append(l)
 
+            filtered = filtered[:50]
+
             if not filtered:
                 listings_box.add_widget(Label(text="No listings match your search."))
                 return
@@ -139,8 +141,7 @@ class BnbApp(App):
             for listing in filtered:
                 row = BoxLayout(orientation='horizontal', size_hint_y=None, height=120, spacing=10)
 
-                # Extract the picture URL
-                picture_url = listing.get('images', [{}]).get('picture_url')
+                picture_url = listing.get('images', {}).get('picture_url')
 
                 image = AsyncImage(
                     source=picture_url if picture_url else 'default.jpg',
@@ -149,31 +150,25 @@ class BnbApp(App):
                 )
 
                 listing_text = f"[b]{listing.get('name', 'Untitled')}[/b]\nLocation: {listing.get('address', {}).get('market', 'N/A')}\nPrice: ${self.convert_decimal128_to_float(listing.get('price', 0))}/night"
-               # host_text = f"{listing.get('host_id', 'Untitled')}"
                 label = Label(text=listing_text, markup=True, halign="left", valign="middle")
                 label.bind(size=label.setter('text_size'))
-              #  host = Label(text=host_text, markup=True, halign="left", valign="middle")
-               # host.bind(size=host.setter('text_size'))
 
                 check_button = Button(
                     text="Check Availability",
                     size_hint_x=None,
                     width=160
                 )
-                
-                # Bind button click to the check_availability method and pass the listing
-
-                
                 check_button.bind(on_press=lambda instance, l=listing: self.check_availability(l))
 
                 row.add_widget(image)
                 row.add_widget(label)
                 row.add_widget(check_button)
-                #row.add_widget(host)
                 listings_box.add_widget(row)
 
         else:
             listings_box.add_widget(Label(text="Error loading listings."))
+
+
 
     # def check_availability(self, listing):
     #     reservation_screen = self.root.get_screen('reservation')

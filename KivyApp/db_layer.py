@@ -7,9 +7,6 @@ from bson.decimal128 import Decimal128
 from pymongo import MongoClient
 import certifi
 
-from datetime import datetime
-from bson import ObjectId
-
 logging.getLogger("pymongo").setLevel(logging.WARNING)
 
 # Load environment variables from .env file
@@ -85,12 +82,12 @@ class DatabaseLayer:
         try:
             query = {}
 
-            # Validate and add city to query
+            # Apply city filter if provided
             if city:
-                city = city.strip().lower()
+                city = city.strip()
                 query["address.market"] = {"$regex": f"^{city}$", "$options": "i"}
 
-            # Validate and add max_price to query
+            # Apply price filter if provided
             if max_price:
                 try:
                     max_price = float(max_price)
@@ -98,54 +95,20 @@ class DatabaseLayer:
                 except ValueError:
                     return {"success": False, "message": "Max price must be a number."}
 
-            listings = list(self.db.Listings.find(query, {"_id": 0}).limit(50))
+            # Base MongoDB query
+            cursor = self.db.Listings.find(query, {"_id": 0})
+
+            # Apply limit only if at least one filter is used
+            if query:
+                cursor = cursor.limit(50)
+
+            listings = list(cursor)
             return {"success": True, "listings": listings}
         except Exception as e:
             return {"success": False, "message": f"Error fetching listings: {str(e)}"}
-        
-    def create_reservation(self, guest_id, listing):
-        try:
-            if not listing or not guest_id:
-                return {'success': False, 'message': 'Invalid reservation data'}
 
-            host_id = listing.get('host', [{}]).get('host_id')
-            if not host_id:
-                return {'success': False, 'message': 'Host ID not found for listing'}
 
-            reservation = {
-                'listing_id': listing.get('id', str(ObjectId())),
-                'guest_id': guest_id,
-                'host_id': host_id,
-                'status': 'Pending',
-                'timestamp': datetime.utcnow()
-            }
 
-            self.db.Reservations.insert_one(reservation)
-            return {'success': True, 'message': 'Reservation created successfully'}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-        
-    def get_reservations(self, guest_id):
-        try:
-            query = {guest_id: str(guest_id)}
-
-            # Validate and add city to query
-            # if city:
-            #     city = city.strip().lower()
-            #     query["address.market"] = {"$regex": f"^{city}$", "$options": "i"}
-
-            # # Validate and add max_price to query
-            # if max_price:
-            #     try:
-            #         max_price = float(max_price)
-            #         query["price"] = {"$lte": Decimal128(str(max_price))}
-            #     except ValueError:
-            #         return {"success": False, "message": "Max price must be a number."}
-
-            listings = list(self.db.Reservations.find(query, {"_id": 0}).limit(50))
-            return {"success": True, "listings": listings}
-        except Exception as e:
-            return {"success": False, "message": f"Error fetching listings: {str(e)}"}
 
 # Instantiate the database layer
 db_layer = DatabaseLayer()
