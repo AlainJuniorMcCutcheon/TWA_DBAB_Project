@@ -254,60 +254,31 @@
             height: 30
 
 <ViewReservationScreen>:
-    name: 'view_reservation'
+    name: 'viewreservation'
     BoxLayout:
         orientation: 'vertical'
         padding: 20
         spacing: 15
 
         Label:
-            text: "Reservation Details"
+            text: "My Reservations"
             font_size: 24
             size_hint_y: None
             height: 40
+            bold: True
+            halign: 'center'
 
-        Label:
-            id: reservation_listing_name
-            text: "Listing: "
-            size_hint_y: None
-            height: 30
-
-        Label:
-            id: reservation_dates
-            text: "Check-in:  -  Check-out: "
-            size_hint_y: None
-            height: 30
-
-        Label:
-            id: reservation_guests
-            text: "Guests: "
-            size_hint_y: None
-            height: 30
-
-        Label:
-            id: reservation_status
-            text: "Status: "
-            size_hint_y: None
-            height: 30
-
-        Label:
-            id: reservation_result
-            text: ""
-            color: 1, 0, 0, 1  # red for error or cancellation result
-            size_hint_y: None
-            height: 30
+        ScrollView:
+            BoxLayout:
+                id: reservations_container
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: 15
 
         BoxLayout:
             size_hint_y: None
             height: 50
-            spacing: 20
-
-            Button:
-                text: "Cancel Reservation"
-                on_press: app.cancel_reservation()
-
             Button:
                 text: "Back"
                 on_press: app.root.current = 'search'
-
-

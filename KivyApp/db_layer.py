@@ -174,6 +174,23 @@ class DatabaseLayer:
         if isinstance(value, Decimal128):
             return float(value.to_decimal())
         return float(value)
+    
+    def get_guest_reservations(self, guest_id):
+        try:
+            reservations = list(self.db.Reservations.find({'guest_id': guest_id}).sort('check_in', -1))
+            return {'success': True, 'reservations': reservations}
+        except Exception as e:
+            return {'success': False, 'message': f'Error fetching reservations: {str(e)}'}
+
+    def cancel_reservation(self, reservation_id):
+        try:
+            result = self.db.Reservations.update_one(
+                {'_id': ObjectId(reservation_id)},
+                {'$set': {'status': 'CANCELLED'}}
+            )
+            return {'success': True, 'message': 'Reservation cancelled successfully'}
+        except Exception as e:
+            return {'success': False, 'message': f'Error cancelling reservation: {str(e)}'}
 
 
 

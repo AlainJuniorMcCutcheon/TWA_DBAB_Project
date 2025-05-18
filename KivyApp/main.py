@@ -24,14 +24,92 @@ class SearchScreen(Screen):
     pass
 
 class ViewReservationScreen(Screen):
-    # def display_reservation(self, reservation):
-    #     self.ids.reservation_listing_name.text = f"Listing: {reservation.get('listing_name', 'N/A')}"
-    #     self.ids.reservation_dates.text = f"Check-in: {reservation.get('check_in', 'N/A')} - Check-out: {reservation.get('check_out', 'N/A')}"
-    #     self.ids.reservation_guests.text = f"Guests: {reservation.get('guests', 'N/A')}"
-    #     self.ids.reservation_status.text = f"Status: {reservation.get('status', 'Pending')}"
-
-    #     self.reservation = reservation  # Store for cancellation reference
-    pass
+    def on_pre_enter(self):
+        self.load_reservations()
+        
+    def load_reservations(self):
+        if not App.get_running_app().current_user:
+            return
+            
+        self.ids.reservations_container.clear_widgets()
+        guest_id = App.get_running_app().current_user['user_id']
+        result = db_layer.get_guest_reservations(guest_id)
+        
+        if result.get('success'):
+            for reservation in result['reservations']:
+                self.add_reservation_card(reservation)
+    
+    def add_reservation_card(self, reservation):
+        card = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            height=150,
+            padding=10,
+            spacing=5
+        )
+        
+        # Title and status
+        title_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=30)
+        title_layout.add_widget(Label(
+            text=f"[b]{reservation.get('listing_title', 'N/A')}[/b]",
+            markup=True,
+            halign='left',
+            size_hint_x=0.7
+        ))
+        
+        status_color = (0.8, 0.8, 0.8, 1)  # Default gray
+        status_text = reservation.get('status', 'PENDING').upper()
+        if status_text == 'PENDING':
+            status_color = (1, 0.5, 0, 1)  # Orange
+        elif status_text == 'CONFIRMED':
+            status_color = (0, 0.8, 0, 1)  # Green
+        elif status_text == 'CANCELLED':
+            status_color = (1, 0, 0, 1)  # Red
+            
+        status_label = Label(
+            text=f"Status: {status_text}",
+            color=status_color,
+            halign='right',
+            size_hint_x=0.3
+        )
+        title_layout.add_widget(status_label)
+        card.add_widget(title_layout)
+        
+        # Location
+        card.add_widget(Label(
+            text=f"City: {reservation.get('city', 'N/A')}",
+            halign='left'
+        ))
+        
+        # Price
+        card.add_widget(Label(
+            text=f"Total: ${reservation.get('total_price', 0):.2f}",
+            halign='left'
+        ))
+        
+        # Dates
+        card.add_widget(Label(
+            text=f"Check-in: {reservation.get('check_in', 'N/A')} - Check-out: {reservation.get('check_out', 'N/A')}",
+            halign='left'
+        ))
+        
+        # Cancel button (only for pending/confirmed)
+        if reservation.get('status') in ['PENDING', 'CONFIRMED']:
+            btn = Button(
+                text='Cancel',
+                size_hint_y=None,
+                height=30,
+                background_color=(1, 0, 0, 1)
+            )
+            btn.bind(on_press=lambda x, r=reservation: self.cancel_reservation(r))
+            card.add_widget(btn)
+        
+        self.ids.reservations_container.add_widget(card)
+    
+    def cancel_reservation(self, reservation):
+        result = db_layer.cancel_reservation(str(reservation['_id']))
+        if result.get('success'):
+            self.load_reservations() 
 
 class ReservationScreen(Screen):
     def display_listing_details(self, listing, app):
@@ -86,7 +164,11 @@ class BnbApp(App):
         self.root.current = 'login'
 
     def view_reserve(self):
-
+        if not self.current_user:
+            return
+            
+        screen = self.root.get_screen('viewreservation')
+        screen.load_reservations()
         self.root.current = 'viewreservation'
 
     def register_guest(self):
