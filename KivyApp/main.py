@@ -115,17 +115,16 @@ class ReservationScreen(Screen):
     def display_listing_details(self, listing, app):
         self.ids.listing_name.text = f"Listing Name: {listing.get('name', 'N/A')}"
         self.ids.listing_price.text = f"Price: ${app.convert_decimal128_to_float(listing.get('price', 0))}/night"
+        self.ids.listing_location.text = f"Location: {listing.get('address', {}).get('market', 'N/A')}"
         
         # Clear previous inputs and results
         self.ids.check_in.text = ""
         self.ids.check_out.text = ""
-        self.ids.guests.text = ""
-        self.ids.reservation_result.text = ""
-        
-        # Set default guests to 1
         self.ids.guests.text = "1"
+        self.ids.reservation_result.text = ""
+        self.ids.availability_result.text = ""
         
-        # Set image with error handling
+        # Set image
         picture_url = listing.get('images', {}).get('picture_url')
         try:
             if picture_url:
@@ -137,6 +136,41 @@ class ReservationScreen(Screen):
             self.ids.listing_image.source = ''
         
         self.listing = listing
+    
+    def check_availability(self):
+        check_in = self.ids.check_in.text.strip()
+        check_out = self.ids.check_out.text.strip()
+        
+        if not all([check_in, check_out]):
+            self.ids.availability_result.text = "Please enter both check-in and check-out dates"
+            self.ids.availability_result.color = (1, 0, 0, 1)
+            return
+        
+        try:
+            from datetime import datetime
+            datetime.strptime(check_in, '%Y-%m-%d')
+            datetime.strptime(check_out, '%Y-%m-%d')
+        except ValueError:
+            self.ids.availability_result.text = "Invalid date format (use YYYY-MM-DD)"
+            self.ids.availability_result.color = (1, 0, 0, 1)
+            return
+        
+        result = db_layer.check_availability(
+            self.listing['_id'],
+            check_in,
+            check_out
+        )
+        
+        if result.get('success'):
+            if result['available']:
+                self.ids.availability_result.text = "These dates are available!"
+                self.ids.availability_result.color = (0, 1, 0, 1)
+            else:
+                self.ids.availability_result.text = "These dates are not available"
+                self.ids.availability_result.color = (1, 0, 0, 1)
+        else:
+            self.ids.availability_result.text = result.get('message', "Error checking availability")
+            self.ids.availability_result.color = (1, 0, 0, 1)
 
 class MyScreenManager(ScreenManager):
     pass
@@ -270,10 +304,11 @@ class BnbApp(App):
 
 
 
-    # def check_availability(self, listing):
-    #     reservation_screen = self.root.get_screen('reservation')
-    #     reservation_screen.display_listing_details(listing)
-    #     self.root.current = 'reservation'
+    def check_availability(self, listing):
+        reservation_screen = self.root.get_screen('reservation')
+        reservation_screen.display_listing_details(listing, self)
+        reservation_screen.listing = listing
+        self.root.current = 'reservation'
 
     def convert_decimal128_to_float(self, value):
         if isinstance(value, Decimal128):
@@ -281,14 +316,7 @@ class BnbApp(App):
         elif isinstance(value, Decimal):
             return float(value)
         return float(value)
-
-    # Update the check_availability method to use app's method
-    def check_availability(self, listing):
-        reservation_screen = self.root.get_screen('reservation')
-        reservation_screen.display_listing_details(listing, self)
-        reservation_screen.listing = listing
-        self.root.current = 'reservation'
-
+        
     def reserve_listing(self):
         if not self.current_user:
             return {'success': False, 'message': 'Not logged in'}
@@ -319,6 +347,23 @@ class BnbApp(App):
             reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)
             return
         
+        # First check availability
+        availability = db_layer.check_availability(
+            listing['_id'],
+            check_in,
+            check_out
+        )
+        
+        if not availability.get('success'):
+            reservation_screen.ids.reservation_result.text = availability.get('message', "Error checking availability")
+            reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)
+            return
+            
+        if not availability['available']:
+            reservation_screen.ids.reservation_result.text = "These dates are not available"
+            reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)
+            return
+        
         # Create reservation
         result = db_layer.create_reservation(
             guest_id=guest_id,
@@ -333,7 +378,7 @@ class BnbApp(App):
         if result.get('success'):
             reservation_screen.ids.reservation_result.text = result['message']
             reservation_screen.ids.reservation_result.color = (0, 1, 0, 1)
-            self.root.current == 'search'
+            self.root.current = 'search'
         else:
             reservation_screen.ids.reservation_result.text = result['message']
             reservation_screen.ids.reservation_result.color = (1, 0, 0, 1)

@@ -185,73 +185,100 @@
 
 <ReservationScreen>:
     name: 'reservation'
-    BoxLayout:
-        orientation: 'vertical'
-        padding: 20
-        spacing: 20
-        
-        Label:
-            text: 'Reservation Details'
-            font_size: 24
-            bold: True
-            halign: 'center'
-
-        AsyncImage:
-            id: listing_image
-            source: '' 
-            size_hint: None, None 
-            width: 400 
-            height: 300 
-            allow_stretch: True  
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5} 
-
-        Label:
-            id: listing_name
-            text: 'Listing Name: N/A'
-
-        Label:
-            id: listing_price
-            text: 'Price: $0.00'
-
-        Label:
-            id: listing_location
-            text: 'Location: N/A'
-
-        TextInput:
-            id: check_in
-            hint_text: 'Check-in Date (YYYY-MM-DD)'
-            multiline: False
+    ScrollView:
+        BoxLayout:
+            orientation: 'vertical'
+            padding: 20
+            spacing: 20
             size_hint_y: None
-            height: 40
+            height: self.minimum_height
+            
+            Label:
+                text: 'Reservation Details'
+                font_size: 24
+                bold: True
+                halign: 'center'
+                size_hint_y: None
+                height: 40
 
-        TextInput:
-            id: check_out
-            hint_text: 'Check-out Date (YYYY-MM-DD)'
-            multiline: False
-            size_hint_y: None
-            height: 40
+            AsyncImage:
+                id: listing_image
+                source: '' 
+                size_hint: None, None 
+                width: 400 
+                height: 300 
+                allow_stretch: True  
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5} 
 
-        TextInput:
-            id: guests
-            hint_text: 'Number of Guests'
-            input_filter: 'int'
-            multiline: False
-            size_hint_y: None
-            height: 40
+            Label:
+                id: listing_name
+                text: 'Listing Name: N/A'
+                size_hint_y: None
+                height: 30
 
-        Button:
-            text: 'Confirm Reservation'
-            on_press: app.reserve_listing()
+            Label:
+                id: listing_price
+                text: 'Price: $0.00'
+                size_hint_y: None
+                height: 30
 
-        Button:
-            text: 'Back to Search'
-            on_press: app.root.current = 'search'
-        Label:
-            id: reservation_result
-            text: ''
-            color: 0, 1, 0, 1  # Green text for success
-            size_hint_y: None
-            height: 30
+            Label:
+                id: listing_location
+                text: 'Location: N/A'
+                size_hint_y: None
+                height: 30
+
+            TextInput:
+                id: check_in
+                hint_text: 'Check-in Date (YYYY-MM-DD)'
+                multiline: False
+                size_hint_y: None
+                height: 40
+
+            TextInput:
+                id: check_out
+                hint_text: 'Check-out Date (YYYY-MM-DD)'
+                multiline: False
+                size_hint_y: None
+                height: 40
+
+            TextInput:
+                id: guests
+                hint_text: 'Number of Guests'
+                input_filter: 'int'
+                multiline: False
+                size_hint_y: None
+                height: 40
+
+            BoxLayout:
+                size_hint_y: None
+                height: 50
+                spacing: 10
+                Button:
+                    text: 'Check Availability'
+                    on_press: root.check_availability()
+                Button:
+                    text: 'Confirm Reservation'
+                    on_press: app.reserve_listing()
+
+            Label:
+                id: availability_result
+                text: ''
+                size_hint_y: None
+                height: 30
+
+            Label:
+                id: reservation_result
+                text: ''
+                color: 0, 1, 0, 1  # Green text for success
+                size_hint_y: None
+                height: 30
+
+            Button:
+                text: 'Back to Search'
+                size_hint_y: None
+                height: 50
+                on_press: app.root.current = 'search'
 
 <ViewReservationScreen>:
     name: 'viewreservation'

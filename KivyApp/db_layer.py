@@ -192,6 +192,33 @@ class DatabaseLayer:
             return {'success': True, 'message': 'Reservation cancelled successfully'}
         except Exception as e:
             return {'success': False, 'message': f'Error cancelling reservation: {str(e)}'}
+        
+
+    def check_availability(self, listing_id, check_in, check_out):
+        try:
+            # Check if there are any overlapping reservations for this listing
+            overlapping_reservations = self.db.Reservations.count_documents({
+                'listing_id': listing_id,
+                '$or': [
+                    {
+                        'check_in': {'$lte': check_out},
+                        'check_out': {'$gte': check_in}
+                    }
+                ],
+                'status': {'$ne': 'CANCELLED'}  # Don't count cancelled reservations
+            })
+            
+            return {
+                'success': True,
+                'available': overlapping_reservations == 0,
+                'message': 'Availability checked successfully'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'available': False,
+                'message': f'Error checking availability: {str(e)}'
+            }
 
 
 
