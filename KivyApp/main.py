@@ -120,7 +120,7 @@ class ReservationScreen(Screen):
         # Clear previous inputs and results
         self.ids.check_in.text = ""
         self.ids.check_out.text = ""
-        self.ids.guests.text = "1"
+        self.ids.guests.text = ""
         self.ids.reservation_result.text = ""
         self.ids.availability_result.text = ""
         
